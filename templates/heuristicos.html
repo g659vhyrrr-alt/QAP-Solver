@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block title %}Construcción | QAP Solver{% endblock %}
+
+{% block content %}
+
+<nav class="topbar">
+
+    <div class="topbarMarca">
+        <img src="{{ url_for('static', filename='img/logo-icon.png') }}" alt="Logo" class="topbarLogo">
+
+        <div>
+            <h1>QAP Solver</h1>
+            <p>Facility Layout Optimization</p>
+        </div>
+    </div>
+
+    <a href="/" class="btnVolver">
+        <i class="bi bi-arrow-left"></i>
+        Inicio
+    </a>
+
+</nav>
+
+<main class="pageMain">
+
+    <section class="pageHeader">
+
+        <span class="etiqueta">Fase 1</span>
+
+        <h2>Seleccionar método de construcción</h2>
+
+        <p>
+            Primero elige el heurístico que generará la solución inicial. Después capturaremos las matrices de flujo y distancia.
+        </p>
+
+    </section>
+
+    <section class="heuristicosGrid">
+
+        <label class="dashboard-card opcionHeuristica seleccionada">
+            <input type="radio" name="construccion" value="mayores_flujos" checked>
+
+            <div>
+                <h4>Asignación basada en mayores flujos</h4>
+                <p>Prioriza las instalaciones con mayor interacción para construir la solución inicial.</p>
+            </div>
+        </label>
+
+        <label class="dashboard-card opcionHeuristica">
+            <input type="radio" name="construccion" value="aleatorizada">
+
+            <div>
+                <h4>Construcción aleatorizada</h4>
+                <p>Genera una solución inicial mediante decisiones aleatorias controladas.</p>
+            </div>
+        </label>
+
+    </section>
+
+    <div class="accionesInferiores">
+
+        <a href="/" class="btnSecundario">
+            Cancelar
+        </a>
+
+        <button class="btn btn-primary-custom" onclick="continuarNuevaInstancia()">
+            Continuar a matrices
+            <i class="bi bi-arrow-right"></i>
+        </button>
+
+    </div>
+
+</main>
+
+{% endblock %}

@@ -1,0 +1,1058 @@
+{% extends "base.html" %}
+
+{% block title %}Solución inicial | QAP Solver{% endblock %}
+
+{% block content %}
+
+<nav class="topbar">
+
+    <div class="topbarMarca">
+        <img src="{{ url_for('static', filename='img/logo-icon.png') }}" alt="Logo" class="topbarLogo">
+
+        <div>
+            <h1>QAP Solver</h1>
+            <p>Facility Layout Optimization</p>
+        </div>
+    </div>
+
+    <a href="/" class="btnVolver">
+        <i class="bi bi-house"></i>
+        Inicio
+    </a>
+
+</nav>
+
+<main class="pageMain">
+
+    <section class="pageHeader">
+
+        <span class="etiqueta">Fase 1 completada</span>
+
+        <h2>Solución inicial generada</h2>
+
+        <p>
+            Desarrollo visual del heurístico de construcción, mostrando matrices, suma de flujos,
+            selección de semilla, costos incrementales y asignación final.
+        </p>
+
+    </section>
+
+    <section class="dashboard-card mb-4">
+
+        <h3>Información del problema</h3>
+
+        <div class="solutionInfoGrid">
+
+            <div class="solutionInfoItem">
+                <span>Método de construcción</span>
+                <strong id="infoConstruccion"></strong>
+            </div>
+
+            <div class="solutionInfoItem">
+                <span>Tamaño del problema</span>
+                <strong id="infoTamano"></strong>
+            </div>
+
+            <div class="solutionInfoItem">
+                <span>Resultado inicial</span>
+                <strong id="infoCostoResumen"></strong>
+            </div>
+
+        </div>
+
+    </section>
+
+    <section class="matrixLayout">
+
+        <div class="dashboard-card matrixCard">
+            <h3>Matriz de flujo W</h3>
+            <p class="text-muted-custom">
+                Representa los viajes o interacciones entre máquinas.
+            </p>
+
+            <div id="matrizFlujoClase"></div>
+        </div>
+
+        <div class="dashboard-card matrixCard">
+            <h3>Matriz de distancia D</h3>
+            <p class="text-muted-custom">
+                Representa las distancias entre ubicaciones.
+            </p>
+
+            <div id="matrizDistanciaClase"></div>
+        </div>
+
+    </section>
+
+    <section class="dashboard-card mt-4">
+
+        <h3>1. Selección de semilla</h3>
+
+        <p class="text-muted-custom">
+            Se calcula el flujo total de cada máquina y se elige la que tenga mayor suma.
+        </p>
+
+        <div id="sumaFlujosClase"></div>
+
+        <div id="semillaClase" class="classNoteBox mt-4"></div>
+
+    </section>
+
+    <section class="dashboard-card mt-4">
+
+        <h3>2. Proceso de construcción</h3>
+
+        <p class="text-muted-custom">
+            En cada iteración se identifica la máquina con mayor interacción con el conjunto ya ubicado,
+            se prueban las ubicaciones vacías y se selecciona la de menor costo incremental.
+        </p>
+
+        <div id="procesoConstruccionClase" class="classProcess"></div>
+
+    </section>
+
+    <section class="dashboard-card mt-4">
+
+        <h3>3. Asignación final heurística</h3>
+
+        <div id="asignacionFinalClase"></div>
+
+    </section>
+
+    <section class="dashboard-card mt-4">
+
+        <h3>4. Cálculo del costo total</h3>
+
+        <p class="text-muted-custom">
+            El costo se calcula como en clase, tomando cada par de máquinas una sola vez.
+        </p>
+
+        <div id="costoTotalClase"></div>
+
+        <div class="accionesInferiores">
+
+            <a href="/heuristicos" class="btnSecundario">
+                Volver
+            </a>
+
+            <a href="/mejora" class="btn btn-primary-custom">
+                Continuar a Fase 2
+                <i class="bi bi-arrow-right"></i>
+            </a>
+
+        </div>
+
+    </section>
+
+</main>
+
+<script>
+
+let metodoOriginal = localStorage.getItem("metodoConstruccion");
+let tam = localStorage.getItem("tamMatriz");
+
+let flujo = JSON.parse(localStorage.getItem("matrizFlujo"));
+let distancia = JSON.parse(localStorage.getItem("matrizDistancia"));
+
+let nombres = [
+    "A", "B", "C", "D", "E", "F",
+    "G", "H", "I", "J", "K", "L"
+];
+
+let metodoTexto = "";
+
+if(metodoOriginal === "mayores_flujos"){
+    metodoTexto = "Asignación basada en mayores flujos";
+}
+else{
+    metodoTexto = "Construcción aleatorizada";
+}
+
+document.getElementById("infoConstruccion").innerHTML = metodoTexto;
+document.getElementById("infoTamano").innerHTML = tam + " × " + tam;
+
+
+/* ===== FUNCIONES DE FORMATO ===== */
+
+function nombreMaquina(i){
+
+    if(i < 0 || i >= nombres.length){
+        return "?";
+    }
+
+    return nombres[i];
+
+}
+
+function nombreUbicacion(i){
+    return i + 1;
+}
+
+function simboloW(i, j){
+    return "W<sub>" + nombreMaquina(i) + nombreMaquina(j) + "</sub>";
+}
+
+function simboloD(i, j){
+    return "D<sub>" + nombreUbicacion(i) + nombreUbicacion(j) + "</sub>";
+}
+
+function maquinaUbicacion(maquina, ubicacion){
+    return nombreMaquina(maquina) + "<sub>" + nombreUbicacion(ubicacion) + "</sub>";
+}
+
+function asignacionTextoPlano(asignacion){
+
+    let texto = [];
+
+    for(let ubicacion = 0; ubicacion < asignacion.length; ubicacion++){
+
+        let maquina = asignacion.indexOf(ubicacion);
+
+        if(maquina !== -1){
+
+            texto.push(
+                nombreMaquina(maquina) + " → " + nombreUbicacion(ubicacion)
+            );
+
+        }
+
+    }
+
+    return texto.join(", ");
+
+}
+
+function asignacionTextoPorUbicacion(asignacion){
+
+    let texto = [];
+
+    for(let ubicacion = 0; ubicacion < asignacion.length; ubicacion++){
+
+        let maquina = asignacion.indexOf(ubicacion);
+
+        if(maquina !== -1){
+
+            texto.push(
+                '<span class="assignmentChip">' +
+                    '<strong>' + nombreMaquina(maquina) + '</strong>' +
+                    '<i class="bi bi-arrow-right"></i>' +
+                    '<strong>' + nombreUbicacion(ubicacion) + '</strong>' +
+                '</span>'
+            );
+
+        }
+
+    }
+
+    return '<div class="assignmentChipGroup">' + texto.join("") + '</div>';
+
+}
+
+function conjuntoUbicadoVisual(ubicadas, asignacion){
+
+    let texto = "";
+
+    for(let i = 0; i < ubicadas.length; i++){
+
+        let maquina = ubicadas[i];
+        let ubicacion = asignacion[maquina];
+
+        texto =
+            texto +
+            '<span class="locatedChip">' +
+                '<strong>' + nombreMaquina(maquina) + '</strong>' +
+                '<small>Ubicación ' + nombreUbicacion(ubicacion) + '</small>' +
+            '</span>';
+
+    }
+
+    return '<div class="locatedChipGroup">' + texto + '</div>';
+
+}
+
+function ubicacionesVaciasVisual(ubicaciones){
+
+    let texto = "";
+
+    for(let i = 0; i < ubicaciones.length; i++){
+
+        texto =
+            texto +
+            '<span class="emptyLocationChip">' +
+                nombreUbicacion(ubicaciones[i]) +
+            '</span>';
+
+    }
+
+    return '<div class="emptyLocationGroup">' + texto + '</div>';
+
+}
+
+function crearMatrizVisual(matriz, tipo){
+
+    let texto = "";
+
+    texto = texto + '<div class="mathMatrixBlock">';
+    texto = texto + '<div class="matrixBracket leftBracket"></div>';
+
+    texto = texto + '<table class="classMatrixTable">';
+    texto = texto + '<thead>';
+    texto = texto + '<tr>';
+    texto = texto + '<th></th>';
+
+    for(let j = 0; j < matriz.length; j++){
+
+        if(tipo === "flujo"){
+            texto = texto + '<th>' + nombreMaquina(j) + '</th>';
+        }
+        else{
+            texto = texto + '<th>' + nombreUbicacion(j) + '</th>';
+        }
+
+    }
+
+    texto = texto + '</tr>';
+    texto = texto + '</thead>';
+
+    texto = texto + '<tbody>';
+
+    for(let i = 0; i < matriz.length; i++){
+
+        texto = texto + '<tr>';
+
+        if(tipo === "flujo"){
+            texto = texto + '<th>' + nombreMaquina(i) + '</th>';
+        }
+        else{
+            texto = texto + '<th>' + nombreUbicacion(i) + '</th>';
+        }
+
+        for(let j = 0; j < matriz.length; j++){
+
+            if(i === j){
+                texto = texto + '<td class="matrixDiagonal">' + matriz[i][j] + '</td>';
+            }
+            else{
+                texto = texto + '<td>' + matriz[i][j] + '</td>';
+            }
+
+        }
+
+        texto = texto + '</tr>';
+
+    }
+
+    texto = texto + '</tbody>';
+    texto = texto + '</table>';
+
+    texto = texto + '<div class="matrixBracket rightBracket"></div>';
+    texto = texto + '</div>';
+
+    return texto;
+
+}
+
+
+/* ===== MOSTRAR MATRICES ===== */
+
+document.getElementById("matrizFlujoClase").innerHTML =
+    '<div class="matrixTitle">W =</div>' +
+    crearMatrizVisual(flujo, "flujo");
+
+document.getElementById("matrizDistanciaClase").innerHTML =
+    '<div class="matrixTitle">D =</div>' +
+    crearMatrizVisual(distancia, "distancia");
+
+
+/* ===== SUMA DE FLUJOS ===== */
+
+function calcularFlujosAcumulados(){
+
+    let acumulados = [];
+
+    for(let i = 0; i < flujo.length; i++){
+
+        let suma = 0;
+
+        for(let j = 0; j < flujo.length; j++){
+
+            if(i !== j){
+                suma = suma + flujo[i][j];
+            }
+
+        }
+
+        acumulados.push(suma);
+
+    }
+
+    return acumulados;
+
+}
+
+function mostrarSumaFlujos(flujosAcumulados){
+
+    let mayor = Math.max(...flujosAcumulados);
+
+    let texto = "";
+
+    texto = texto + '<div class="flowSumGrid">';
+
+    for(let i = 0; i < flujo.length; i++){
+
+        let valores = [];
+
+        for(let j = 0; j < flujo.length; j++){
+
+            if(i !== j){
+                valores.push(flujo[i][j]);
+            }
+
+        }
+
+        let claseMayor = "";
+
+        if(flujosAcumulados[i] === mayor){
+            claseMayor = " flowWinner";
+        }
+
+        texto = texto + '<div class="flowSumItem' + claseMayor + '">';
+        texto = texto + '<span>' + nombreMaquina(i) + '</span>';
+        texto = texto + '<p>' + valores.join(" + ") + ' = <strong>' + flujosAcumulados[i] + '</strong></p>';
+
+        if(flujosAcumulados[i] === mayor){
+            texto = texto + '<small>Mayor flujo total</small>';
+        }
+
+        texto = texto + '</div>';
+
+    }
+
+    texto = texto + '</div>';
+
+    return texto;
+
+}
+
+
+/* ===== COSTO TOTAL COMO EN CLASE ===== */
+
+function calcularCostoPorUbicaciones(asignacion){
+
+    let maquinaPorUbicacion = [];
+
+    for(let ubicacion = 0; ubicacion < asignacion.length; ubicacion++){
+
+        maquinaPorUbicacion.push(asignacion.indexOf(ubicacion));
+
+    }
+
+    let total = 0;
+
+    for(let u1 = 0; u1 < maquinaPorUbicacion.length; u1++){
+
+        for(let u2 = u1 + 1; u2 < maquinaPorUbicacion.length; u2++){
+
+            let m1 = maquinaPorUbicacion[u1];
+            let m2 = maquinaPorUbicacion[u2];
+
+            total =
+                total +
+                flujo[m1][m2] *
+                distancia[u1][u2];
+
+        }
+
+    }
+
+    return total;
+
+}
+
+
+/* ===== MAYORES FLUJOS ===== */
+
+function resolverMayoresFlujos(){
+
+    let flujosAcumulados = calcularFlujosAcumulados();
+
+    document.getElementById("sumaFlujosClase").innerHTML =
+        mostrarSumaFlujos(flujosAcumulados);
+
+    let mayor = Math.max(...flujosAcumulados);
+
+    let empatadas = [];
+
+    for(let i = 0; i < flujosAcumulados.length; i++){
+
+        if(flujosAcumulados[i] === mayor){
+            empatadas.push(i);
+        }
+
+    }
+
+    let semilla = empatadas[0];
+
+    let textoSemilla = "";
+
+    if(empatadas.length > 1){
+
+        textoSemilla =
+            '<strong>Empate:</strong> ' +
+            empatadas.map(i => nombreMaquina(i)).join(" y ") +
+            ' tienen flujo total ' + mayor +
+            '. Se elige arbitrariamente <strong>' +
+            nombreMaquina(semilla) +
+            '</strong> como semilla.';
+
+    }
+    else{
+
+        textoSemilla =
+            'La máquina con mayor flujo total es <strong>' +
+            nombreMaquina(semilla) +
+            '</strong>, con valor <strong>' +
+            mayor +
+            '</strong>.';
+
+    }
+
+    textoSemilla =
+        textoSemilla +
+        '<div class="seedAssignment">' +
+            '<span>' + nombreMaquina(semilla) + '</span>' +
+            '<i class="bi bi-arrow-right"></i>' +
+            '<span>1</span>' +
+        '</div>';
+
+    document.getElementById("semillaClase").innerHTML = textoSemilla;
+
+    let asignacion = [];
+
+    for(let i = 0; i < flujo.length; i++){
+        asignacion.push(-1);
+    }
+
+    asignacion[semilla] = 0;
+
+    let pasos = [];
+
+    while(asignacion.includes(-1)){
+
+        let ubicadas = [];
+        let restantes = [];
+
+        for(let i = 0; i < asignacion.length; i++){
+
+            if(asignacion[i] !== -1){
+                ubicadas.push(i);
+            }
+            else{
+                restantes.push(i);
+            }
+
+        }
+
+        let interacciones = [];
+
+        for(let r = 0; r < restantes.length; r++){
+
+            let maquina = restantes[r];
+            let sumaInteraccion = 0;
+            let partes = [];
+            let valores = [];
+
+            for(let u = 0; u < ubicadas.length; u++){
+
+                let maqUbicada = ubicadas[u];
+
+                sumaInteraccion =
+                    sumaInteraccion +
+                    flujo[maquina][maqUbicada];
+
+                partes.push(
+                    simboloW(maquina, maqUbicada)
+                );
+
+                valores.push(
+                    flujo[maquina][maqUbicada]
+                );
+
+            }
+
+            interacciones.push({
+                maquina: maquina,
+                suma: sumaInteraccion,
+                formula: partes.join(" + "),
+                valores: valores.join(" + ")
+            });
+
+        }
+
+        let mayorInteraccion = -1;
+        let siguienteInstalacion = -1;
+
+        for(let i = 0; i < interacciones.length; i++){
+
+            if(interacciones[i].suma > mayorInteraccion){
+
+                mayorInteraccion = interacciones[i].suma;
+                siguienteInstalacion = interacciones[i].maquina;
+
+            }
+
+        }
+
+        let ubicacionesVacias = [];
+
+        for(let u = 0; u < asignacion.length; u++){
+
+            if(!asignacion.includes(u)){
+                ubicacionesVacias.push(u);
+            }
+
+        }
+
+        let costos = [];
+
+        for(let u = 0; u < ubicacionesVacias.length; u++){
+
+            let ubicacionPrueba = ubicacionesVacias[u];
+            let costoIncremental = 0;
+            let formula = [];
+            let desarrollo = [];
+            let productos = [];
+
+            for(let k = 0; k < ubicadas.length; k++){
+
+                let maqUbicada = ubicadas[k];
+                let ubicacionAsignada = asignacion[maqUbicada];
+
+                let w = flujo[siguienteInstalacion][maqUbicada];
+                let d = distancia[ubicacionPrueba][ubicacionAsignada];
+                let producto = w * d;
+
+                costoIncremental =
+                    costoIncremental +
+                    producto;
+
+                formula.push(
+                    simboloW(siguienteInstalacion, maqUbicada) +
+                    " · " +
+                    simboloD(ubicacionPrueba, ubicacionAsignada)
+                );
+
+                desarrollo.push(w + " · " + d);
+                productos.push(producto);
+
+            }
+
+            let desarrolloTexto = "";
+
+            if(productos.length > 1){
+                desarrolloTexto =
+                    desarrollo.join(" + ") +
+                    " = " +
+                    productos.join(" + ");
+            }
+            else{
+                desarrolloTexto =
+                    desarrollo.join(" + ");
+            }
+
+            costos.push({
+                ubicacion: ubicacionPrueba,
+                costo: costoIncremental,
+                formula: formula.join(" + "),
+                desarrollo: desarrolloTexto,
+                productos: productos.join(" + ")
+            });
+
+        }
+
+        let menorCosto = Infinity;
+        let mejorUbicacion = -1;
+
+        for(let c = 0; c < costos.length; c++){
+
+            if(costos[c].costo < menorCosto){
+
+                menorCosto = costos[c].costo;
+                mejorUbicacion = costos[c].ubicacion;
+
+            }
+
+        }
+
+        let asignacionAntes = [...asignacion];
+
+        asignacion[siguienteInstalacion] = mejorUbicacion;
+
+        pasos.push({
+            ubicadasAntes: ubicadas,
+            restantesAntes: restantes,
+            interacciones: interacciones,
+            maquinaElegida: siguienteInstalacion,
+            mayorInteraccion: mayorInteraccion,
+            ubicacionesVacias: ubicacionesVacias,
+            costos: costos,
+            mejorUbicacion: mejorUbicacion,
+            menorCosto: menorCosto,
+            asignacionAntes: asignacionAntes,
+            asignacionDespues: [...asignacion]
+        });
+
+    }
+
+    return {
+        asignacion: asignacion,
+        pasos: pasos,
+        flujosAcumulados: flujosAcumulados
+    };
+
+}
+
+
+/* ===== CONSTRUCCIÓN ALEATORIZADA ===== */
+
+function resolverAleatorizada(){
+
+    let flujosAcumulados = calcularFlujosAcumulados();
+
+    document.getElementById("sumaFlujosClase").innerHTML =
+        mostrarSumaFlujos(flujosAcumulados);
+
+    document.getElementById("semillaClase").innerHTML =
+        'En la construcción aleatorizada no se selecciona semilla por mayor flujo. ' +
+        'Se genera una asignación aleatoria válida sin repetir ubicaciones.';
+
+    let ubicaciones = [];
+
+    for(let i = 0; i < flujo.length; i++){
+        ubicaciones.push(i);
+    }
+
+    for(let i = ubicaciones.length - 1; i > 0; i--){
+
+        let j = Math.floor(Math.random() * (i + 1));
+
+        let aux = ubicaciones[i];
+        ubicaciones[i] = ubicaciones[j];
+        ubicaciones[j] = aux;
+
+    }
+
+    let asignacion = [];
+
+    for(let i = 0; i < flujo.length; i++){
+        asignacion.push(ubicaciones[i]);
+    }
+
+    return {
+        asignacion: asignacion,
+        pasos: [],
+        flujosAcumulados: flujosAcumulados
+    };
+
+}
+
+
+/* ===== EJECUTAR MÉTODO ===== */
+
+let resultado;
+
+if(metodoOriginal === "mayores_flujos"){
+    resultado = resolverMayoresFlujos();
+}
+else{
+    resultado = resolverAleatorizada();
+}
+
+let asignacion = resultado.asignacion;
+let pasos = resultado.pasos;
+
+let costoTotal = calcularCostoPorUbicaciones(asignacion);
+
+document.getElementById("infoCostoResumen").innerHTML =
+    costoTotal;
+
+
+/* ===== MOSTRAR PROCESO ===== */
+
+let procesoHTML = "";
+
+if(metodoOriginal === "mayores_flujos"){
+
+    for(let p = 0; p < pasos.length; p++){
+
+        let paso = pasos[p];
+
+        procesoHTML =
+            procesoHTML +
+            '<div class="classIterationCard">' +
+
+                '<div class="iterationHeader">' +
+                    '<span>Iteración ' + (p + 1) + '</span>' +
+                    '<strong>Elegir siguiente máquina</strong>' +
+                '</div>';
+
+        procesoHTML =
+            procesoHTML +
+                '<div class="classSubBlock">' +
+                    '<h4>Conjunto ubicado</h4>' +
+                    conjuntoUbicadoVisual(paso.ubicadasAntes, paso.asignacionAntes) +
+                '</div>';
+
+        procesoHTML =
+            procesoHTML +
+                '<div class="classSubBlock">' +
+                    '<h4>Interacción con el conjunto</h4>' +
+                    '<div class="classCalcList">';
+
+        for(let i = 0; i < paso.interacciones.length; i++){
+
+            let item = paso.interacciones[i];
+
+            let claseMayor = "";
+
+            if(item.maquina === paso.maquinaElegida){
+                claseMayor = " selectedCalc";
+            }
+
+            let textoInteraccion = "";
+
+            if(item.valores.includes("+")){
+                textoInteraccion =
+                    item.formula +
+                    " = " +
+                    item.valores +
+                    " = <strong>" +
+                    item.suma +
+                    "</strong>";
+            }
+            else{
+                textoInteraccion =
+                    item.formula +
+                    " = <strong>" +
+                    item.suma +
+                    "</strong>";
+            }
+
+            procesoHTML =
+                procesoHTML +
+                '<div class="classCalcItem' + claseMayor + '">' +
+                    '<span>' + nombreMaquina(item.maquina) + '</span>' +
+                    '<p>' + textoInteraccion + '</p>' +
+                '</div>';
+
+        }
+
+        procesoHTML =
+            procesoHTML +
+                    '</div>' +
+                    '<p class="classConclusion">Se elige <strong>' +
+                        nombreMaquina(paso.maquinaElegida) +
+                    '</strong>, porque tiene la mayor interacción: <strong>' +
+                        paso.mayorInteraccion +
+                    '</strong>.</p>' +
+                '</div>';
+
+        procesoHTML =
+            procesoHTML +
+                '<div class="classSubBlock">' +
+                    '<h4>Costo incremental de ' + nombreMaquina(paso.maquinaElegida) + '</h4>' +
+                    '<p class="miniLabel">Ubicaciones vacías</p>' +
+                    ubicacionesVaciasVisual(paso.ubicacionesVacias) +
+                    '<div class="incrementalTableWrapper">' +
+                        '<table class="incrementalTable">' +
+                            '<thead>' +
+                                '<tr>' +
+                                    '<th>Ubicación k</th>' +
+                                    '<th>Fórmula</th>' +
+                                    '<th>Desarrollo</th>' +
+                                    '<th>Costo</th>' +
+                                '</tr>' +
+                            '</thead>' +
+                            '<tbody>';
+
+        for(let c = 0; c < paso.costos.length; c++){
+
+            let costo = paso.costos[c];
+
+            let claseMin = "";
+
+            if(costo.ubicacion === paso.mejorUbicacion){
+                claseMin = " minCostRow";
+            }
+
+            procesoHTML =
+                procesoHTML +
+                '<tr class="' + claseMin + '">' +
+                    '<td><strong>' + nombreUbicacion(costo.ubicacion) + '</strong></td>' +
+                    '<td>' + costo.formula + '</td>' +
+                    '<td>' + costo.desarrollo + '</td>' +
+                    '<td><strong>' + costo.costo + '</strong></td>' +
+                '</tr>';
+
+        }
+
+        procesoHTML =
+            procesoHTML +
+                            '</tbody>' +
+                        '</table>' +
+                    '</div>' +
+                    '<p class="classConclusion">Mínimo en k = <strong>' +
+                        nombreUbicacion(paso.mejorUbicacion) +
+                    '</strong>. Se asigna <strong>' +
+                        nombreMaquina(paso.maquinaElegida) +
+                    ' → ' +
+                        nombreUbicacion(paso.mejorUbicacion) +
+                    '</strong>.</p>' +
+                '</div>';
+
+        procesoHTML =
+            procesoHTML +
+                '<div class="classSubBlock assignmentNow">' +
+                    '<h4>Asignación actual</h4>' +
+                    asignacionTextoPorUbicacion(paso.asignacionDespues) +
+                '</div>';
+
+        procesoHTML =
+            procesoHTML +
+            '</div>';
+
+    }
+
+}
+else{
+
+    procesoHTML =
+        '<div class="classIterationCard">' +
+            '<div class="iterationHeader">' +
+                '<span>Construcción aleatorizada</span>' +
+                '<strong>Asignación generada</strong>' +
+            '</div>' +
+            '<div class="classSubBlock assignmentNow">' +
+                '<h4>Asignación inicial</h4>' +
+                asignacionTextoPorUbicacion(asignacion) +
+            '</div>' +
+        '</div>';
+
+}
+
+document.getElementById("procesoConstruccionClase").innerHTML =
+    procesoHTML;
+
+
+/* ===== ASIGNACIÓN FINAL ===== */
+
+document.getElementById("asignacionFinalClase").innerHTML =
+    '<div class="finalAssignmentBox">' +
+        '<div>' +
+            '<span>Asignación final heurística</span>' +
+            '<h4>' + asignacionTextoPlano(asignacion) + '</h4>' +
+            asignacionTextoPorUbicacion(asignacion) +
+        '</div>' +
+        '<div class="finalCostMini">' +
+            '<span>Costo inicial</span>' +
+            '<strong>' + costoTotal + '</strong>' +
+        '</div>' +
+    '</div>';
+
+
+/* ===== COSTO TOTAL DETALLADO ===== */
+
+function generarCostoTotalHTML(asignacion){
+
+    let maquinaPorUbicacion = [];
+
+    for(let ubicacion = 0; ubicacion < asignacion.length; ubicacion++){
+
+        maquinaPorUbicacion.push(asignacion.indexOf(ubicacion));
+
+    }
+
+    let filas = "";
+    let productos = [];
+    let total = 0;
+
+    for(let u1 = 0; u1 < maquinaPorUbicacion.length; u1++){
+
+        for(let u2 = u1 + 1; u2 < maquinaPorUbicacion.length; u2++){
+
+            let m1 = maquinaPorUbicacion[u1];
+            let m2 = maquinaPorUbicacion[u2];
+
+            let w = flujo[m1][m2];
+            let d = distancia[u1][u2];
+            let producto = w * d;
+
+            productos.push(producto);
+            total = total + producto;
+
+            filas =
+                filas +
+                '<tr>' +
+                    '<td>' +
+                        maquinaUbicacion(m1, u1) +
+                        ' - ' +
+                        maquinaUbicacion(m2, u2) +
+                    '</td>' +
+                    '<td>' +
+                        simboloW(m1, m2) +
+                        ' · ' +
+                        simboloD(u1, u2) +
+                    '</td>' +
+                    '<td>' +
+                        w + ' · ' + d + ' = <strong>' + producto + '</strong>' +
+                    '</td>' +
+                '</tr>';
+
+        }
+
+    }
+
+    let texto = "";
+
+    texto =
+        '<div class="costDetailLayout">' +
+
+            '<div class="incrementalTableWrapper">' +
+                '<table class="incrementalTable">' +
+                    '<thead>' +
+                        '<tr>' +
+                            '<th>Par</th>' +
+                            '<th>Fórmula</th>' +
+                            '<th>Desarrollo</th>' +
+                        '</tr>' +
+                    '</thead>' +
+                    '<tbody>' +
+                        filas +
+                    '</tbody>' +
+                '</table>' +
+            '</div>' +
+
+            '<div class="totalCostBox">' +
+                '<span>Costo total</span>' +
+                '<p>' + productos.join(" + ") + '</p>' +
+                '<strong>' + total + '</strong>' +
+            '</div>' +
+
+        '</div>';
+
+    return texto;
+
+}
+
+document.getElementById("costoTotalClase").innerHTML =
+    generarCostoTotalHTML(asignacion);
+
+
+/* ===== GUARDAR PARA FASE 2 ===== */
+
+localStorage.setItem("asignacionInicial", JSON.stringify(asignacion));
+localStorage.setItem("costoInicial", costoTotal);
+
+</script>
+
+{% endblock %}

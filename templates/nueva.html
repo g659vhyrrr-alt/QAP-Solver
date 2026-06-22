@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+
+{% block title %}Nueva instancia | QAP Solver{% endblock %}
+
+{% block content %}
+
+<nav class="topbar">
+
+    <div class="topbarMarca">
+
+        <img src="{{ url_for('static', filename='img/logo-icon.png') }}" alt="Logo" class="topbarLogo">
+
+        <div>
+            <h1>QAP Solver</h1>
+            <p>Facility Layout Optimization</p>
+        </div>
+
+    </div>
+
+    <a href="/" class="btnVolver">
+        <i class="bi bi-arrow-left"></i>
+        Inicio
+    </a>
+
+</nav>
+
+<main class="pageMain">
+
+    <section class="pageHeader">
+
+        <div>
+
+            <span class="etiqueta">
+    {% block metodoEtiqueta %}Nueva instancia{% endblock %}
+</span>
+
+<h2>
+    {% block metodoTitulo %}Configuración del problema{% endblock %}
+</h2>
+
+<p>
+    {% block metodoDescripcion %}
+    Define el tamaño del problema y genera automáticamente las matrices de flujo y distancia.
+    {% endblock %}
+</p>
+        </div>
+
+    </section>
+
+    <section class="dashboard-card configPanel">
+
+        <div class="row g-4">
+
+            <div class="col-md-6">
+
+                <label class="form-label">Nombre del proyecto</label>
+
+                <input type="text" class="form-control inputCustom" id="nomProyecto" placeholder="Ejemplo: Planta A">
+
+            </div>
+
+            <div class="col-md-3">
+
+                <label class="form-label">Número de instalaciones</label>
+
+                <input type="number" class="form-control inputCustom" id="tamMatriz" min="2" max="12" value="4">
+
+            </div>
+
+            <div class="col-md-3 d-flex align-items-end">
+
+                <button class="btn btn-primary-custom w-100" onclick="generarMatrices()">
+                    Generar matrices
+                </button>
+
+            </div>
+
+        </div>
+
+        <div class="estadoBox" id="estadoBox">
+            <i class="bi bi-info-circle"></i>
+            Ingresa el tamaño del problema para generar las matrices.
+        </div>
+
+    </section>
+
+    <section class="matricesArea d-none" id="matricesArea">
+
+        <div class="matricesHeader">
+
+            <div>
+                <h3>Captura de datos</h3>
+                <p>La diagonal principal queda fija en 0 porque una instalación no tiene flujo o distancia consigo misma.</p>
+            </div>
+
+            <button class="btn btn-primary-custom" onclick="validarMatrices()">
+    {% block botonSolucion %}Generar solución inicial{% endblock %}
+</button>
+
+        </div>
+
+        <div class="matricesGrid">
+
+            <div class="dashboard-card">
+
+                <h4>Matriz de flujo</h4>
+
+                <p class="text-muted-custom">
+                    Representa el movimiento entre instalaciones.
+                </p>
+
+                <div class="tablaScroll" id="tablaFlujo"></div>
+
+            </div>
+
+            <div class="dashboard-card">
+
+                <h4>Matriz de distancia</h4>
+
+                <p class="text-muted-custom">
+                    Representa la distancia entre ubicaciones.
+                </p>
+
+                <div class="tablaScroll" id="tablaDistancia"></div>
+
+            </div>
+
+        </div>
+
+    </section>
+
+</main>
+
+{% endblock %}

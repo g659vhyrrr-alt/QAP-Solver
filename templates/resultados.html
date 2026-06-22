@@ -1,0 +1,773 @@
+{% extends "base.html" %}
+
+{% block title %}Resultados | QAP Solver{% endblock %}
+
+{% block content %}
+
+<nav class="topbar">
+
+    <div class="topbarMarca">
+        <img src="{{ url_for('static', filename='img/logo-icon.png') }}" alt="Logo" class="topbarLogo">
+
+        <div>
+            <h1>QAP Solver</h1>
+            <p>Facility Layout Optimization</p>
+        </div>
+    </div>
+
+    <a href="/" class="btnVolver">
+        <i class="bi bi-house"></i>
+        Inicio
+    </a>
+
+</nav>
+
+<main class="pageMain">
+
+    <section class="pageHeader">
+
+        <span class="etiqueta">Resultados finales</span>
+
+        <h2>Resumen de optimización</h2>
+
+        <p>
+            Aquí se muestra la mejora local mediante intercambio por pares, evaluando los costos
+            de cada posible intercambio desde la asignación inicial.
+        </p>
+
+    </section>
+
+    <section class="dashboard-card mb-4">
+
+        <h3>Resumen del experimento</h3>
+
+        <div class="solutionInfoGrid">
+
+            <div class="solutionInfoItem">
+                <span>Construcción</span>
+                <strong id="resConstruccion"></strong>
+            </div>
+
+            <div class="solutionInfoItem">
+                <span>Método de mejora</span>
+                <strong id="resMejora"></strong>
+            </div>
+
+            <div class="solutionInfoItem">
+                <span>Tamaño</span>
+                <strong id="resTamano"></strong>
+            </div>
+
+        </div>
+
+    </section>
+
+    <section class="resultadosGrid">
+
+        <div class="dashboard-card resultadoCard">
+            <span>Costo inicial</span>
+            <h3 id="cardCostoInicial">--</h3>
+        </div>
+
+        <div class="dashboard-card resultadoCard">
+            <span>Costo final</span>
+            <h3 id="cardCostoFinal">--</h3>
+        </div>
+
+        <div class="dashboard-card resultadoCard">
+            <span>Mejora</span>
+            <h3 id="cardMejora">--%</h3>
+        </div>
+
+        <div class="dashboard-card resultadoCard">
+            <span>Tiempo total</span>
+            <h3 id="cardTiempo">-- s</h3>
+        </div>
+
+    </section>
+
+    <section class="dashboard-card mt-4">
+
+        <h3>1. Asignación inicial</h3>
+
+        <p class="text-muted-custom">
+            Se parte de la solución inicial generada en la fase de construcción.
+        </p>
+
+        <div id="asignacionInicialVisual"></div>
+
+    </section>
+
+    <section class="dashboard-card mt-4">
+
+        <h3>2. Método de mejora local</h3>
+
+        <div class="classNoteBox">
+
+            <p>
+                Se prueban todos los intercambios posibles entre pares de máquinas. Para cada intercambio,
+                se genera una nueva asignación, se calcula su costo total y se compara contra el costo actual.
+            </p>
+
+            <p>
+                Si <strong>ΔC &lt; 0</strong>, el intercambio mejora la solución. Si <strong>ΔC ≥ 0</strong>,
+                el intercambio no reduce el costo.
+            </p>
+
+        </div>
+
+    </section>
+
+    <section class="dashboard-card mt-4">
+
+        <h3>3. Evaluación de intercambios</h3>
+
+        <p class="text-muted-custom">
+            Cada tarjeta muestra el intercambio probado, la nueva asignación, el costo calculado y la diferencia de costo.
+        </p>
+
+        <div id="evaluacionesSwapVisual" class="swapEvaluationGrid"></div>
+
+    </section>
+
+    <section class="dashboard-card mt-4">
+
+        <h3>4. Criterio de parada</h3>
+
+        <div id="criterioParadaVisual"></div>
+
+    </section>
+
+    <section class="dashboard-card mt-4">
+
+        <h3>5. Asignación final</h3>
+
+        <div id="asignacionFinalVisual"></div>
+
+        <div class="accionesInferiores">
+
+            <a href="/mejora" class="btnSecundario">
+                Volver
+            </a>
+
+            <button class="btn btn-primary-custom" onclick="exportarReporte()">
+                Exportar reporte
+                <i class="bi bi-file-earmark-pdf"></i>
+            </button>
+
+        </div>
+
+    </section>
+
+</main>
+
+<script>
+
+let inicioTiempo = performance.now();
+
+let construccionOriginal = localStorage.getItem("metodoConstruccion");
+let mejoraOriginal = localStorage.getItem("metodoMejora");
+let tam = localStorage.getItem("tamMatriz");
+
+let flujo = JSON.parse(localStorage.getItem("matrizFlujo"));
+let distancia = JSON.parse(localStorage.getItem("matrizDistancia"));
+let asignacionInicial = JSON.parse(localStorage.getItem("asignacionInicial"));
+
+let nombres = [
+    "A", "B", "C", "D", "E", "F",
+    "G", "H", "I", "J", "K", "L"
+];
+
+let construccionTexto = "";
+let mejoraTexto = "";
+
+if(construccionOriginal === "mayores_flujos"){
+    construccionTexto = "Asignación basada en mayores flujos";
+}
+else{
+    construccionTexto = "Construcción aleatorizada";
+}
+
+if(mejoraOriginal === "swap"){
+    mejoraTexto = "Intercambio por pares (Swap)";
+}
+else{
+    mejoraTexto = "Búsqueda local";
+}
+
+document.getElementById("resConstruccion").innerHTML =
+    construccionTexto;
+
+document.getElementById("resMejora").innerHTML =
+    mejoraTexto;
+
+document.getElementById("resTamano").innerHTML =
+    tam + " × " + tam;
+
+
+/* ===== FUNCIONES DE FORMATO ===== */
+
+function nombreMaquina(i){
+
+    if(i < 0 || i >= nombres.length){
+        return "?";
+    }
+
+    return nombres[i];
+
+}
+
+function nombreUbicacion(i){
+    return i + 1;
+}
+
+function simboloW(i, j){
+    return "W<sub>" + nombreMaquina(i) + nombreMaquina(j) + "</sub>";
+}
+
+function simboloD(i, j){
+    return "D<sub>" + nombreUbicacion(i) + nombreUbicacion(j) + "</sub>";
+}
+
+function maquinaUbicacion(maquina, ubicacion){
+    return nombreMaquina(maquina) + "<sub>" + nombreUbicacion(ubicacion) + "</sub>";
+}
+
+function asignacionTextoPlano(asignacion){
+
+    let texto = [];
+
+    for(let ubicacion = 0; ubicacion < asignacion.length; ubicacion++){
+
+        let maquina = asignacion.indexOf(ubicacion);
+
+        if(maquina !== -1){
+
+            texto.push(
+                nombreMaquina(maquina) + " → " + nombreUbicacion(ubicacion)
+            );
+
+        }
+
+    }
+
+    return texto.join(", ");
+
+}
+
+function asignacionVisual(asignacion){
+
+    let texto = "";
+
+    for(let ubicacion = 0; ubicacion < asignacion.length; ubicacion++){
+
+        let maquina = asignacion.indexOf(ubicacion);
+
+        if(maquina !== -1){
+
+            texto =
+                texto +
+                '<span class="assignmentChip">' +
+                    '<strong>' + nombreMaquina(maquina) + '</strong>' +
+                    '<i class="bi bi-arrow-right"></i>' +
+                    '<strong>' + nombreUbicacion(ubicacion) + '</strong>' +
+                '</span>';
+
+        }
+
+    }
+
+    return '<div class="assignmentChipGroup">' + texto + '</div>';
+
+}
+
+
+/* ===== COSTO COMO EN CLASE: PARES UNA SOLA VEZ ===== */
+
+function calcularCosto(asignacion){
+
+    let maquinaPorUbicacion = [];
+
+    for(let ubicacion = 0; ubicacion < asignacion.length; ubicacion++){
+
+        maquinaPorUbicacion.push(asignacion.indexOf(ubicacion));
+
+    }
+
+    let total = 0;
+
+    for(let u1 = 0; u1 < maquinaPorUbicacion.length; u1++){
+
+        for(let u2 = u1 + 1; u2 < maquinaPorUbicacion.length; u2++){
+
+            let m1 = maquinaPorUbicacion[u1];
+            let m2 = maquinaPorUbicacion[u2];
+
+            total =
+                total +
+                flujo[m1][m2] *
+                distancia[u1][u2];
+
+        }
+
+    }
+
+    return total;
+
+}
+
+
+
+/* ===== DETALLE DEL COSTO COMO EN CLASE ===== */
+
+function generarDetalleCosto(asignacion){
+
+    let maquinaPorUbicacion = [];
+
+    for(let ubicacion = 0; ubicacion < asignacion.length; ubicacion++){
+
+        maquinaPorUbicacion.push(asignacion.indexOf(ubicacion));
+
+    }
+
+    let filas = "";
+    let productos = [];
+    let total = 0;
+
+    for(let u1 = 0; u1 < maquinaPorUbicacion.length; u1++){
+
+        for(let u2 = u1 + 1; u2 < maquinaPorUbicacion.length; u2++){
+
+            let m1 = maquinaPorUbicacion[u1];
+            let m2 = maquinaPorUbicacion[u2];
+
+            let w = flujo[m1][m2];
+            let d = distancia[u1][u2];
+            let producto = w * d;
+
+            productos.push(producto);
+            total = total + producto;
+
+            filas =
+                filas +
+                '<tr>' +
+                    '<td>' +
+                        maquinaUbicacion(m1, u1) +
+                        ' - ' +
+                        maquinaUbicacion(m2, u2) +
+                    '</td>' +
+                    '<td>' +
+                        simboloW(m1, m2) +
+                        ' · ' +
+                        simboloD(u1, u2) +
+                    '</td>' +
+                    '<td>' +
+                        w + ' · ' + d + ' = <strong>' + producto + '</strong>' +
+                    '</td>' +
+                '</tr>';
+
+        }
+
+    }
+
+    return {
+        total: total,
+        productos: productos,
+        filas: filas
+    };
+
+}
+
+
+/* ===== VALIDAR DATOS ===== */
+
+if(asignacionInicial === null){
+
+    document.getElementById("evaluacionesSwapVisual").innerHTML =
+        '<div class="classNoteBox">No se encontró una asignación inicial guardada. Regresa a Solución inicial y vuelve a continuar.</div>';
+
+}
+else{
+
+    let costoInicial = calcularCosto(asignacionInicial);
+
+    document.getElementById("asignacionInicialVisual").innerHTML =
+        '<div class="finalAssignmentBox">' +
+            '<div>' +
+                '<span>Asignación inicial</span>' +
+                '<h4>' + asignacionTextoPlano(asignacionInicial) + '</h4>' +
+                asignacionVisual(asignacionInicial) +
+            '</div>' +
+            '<div class="finalCostMini">' +
+                '<span>Costo inicial</span>' +
+                '<strong>' + costoInicial + '</strong>' +
+            '</div>' +
+        '</div>';
+
+
+    /* ===== EVALUAR TODOS LOS INTERCAMBIOS ===== */
+
+    function evaluarIntercambios(asignacionBase, costoBase){
+
+        let evaluaciones = [];
+
+        for(let i = 0; i < asignacionBase.length; i++){
+
+            for(let j = i + 1; j < asignacionBase.length; j++){
+
+                let asignacionPrueba = [...asignacionBase];
+
+                let ubicacionI = asignacionPrueba[i];
+                let ubicacionJ = asignacionPrueba[j];
+
+                asignacionPrueba[i] = ubicacionJ;
+                asignacionPrueba[j] = ubicacionI;
+
+                let detalle = generarDetalleCosto(asignacionPrueba);
+                let costoPrueba = detalle.total;
+                let delta = costoPrueba - costoBase;
+
+                evaluaciones.push({
+                    maquinaI: i,
+                    maquinaJ: j,
+                    ubicacionI: ubicacionI,
+                    ubicacionJ: ubicacionJ,
+                    asignacion: asignacionPrueba,
+                    costo: costoPrueba,
+                    delta: delta,
+                    detalle: detalle
+                });
+
+            }
+
+        }
+
+        return evaluaciones;
+
+    }
+
+
+    function elegirMejorEvaluacion(evaluaciones){
+
+        let mejor = evaluaciones[0];
+
+        for(let i = 0; i < evaluaciones.length; i++){
+
+            if(evaluaciones[i].delta < mejor.delta){
+                mejor = evaluaciones[i];
+            }
+
+        }
+
+        return mejor;
+
+    }
+
+
+    /* ===== SWAP: BEST IMPROVEMENT DE UNA RONDA ===== */
+
+    function aplicarSwap(asignacionBase){
+
+        let costoBase = calcularCosto(asignacionBase);
+        let evaluaciones = evaluarIntercambios(asignacionBase, costoBase);
+        let mejor = elegirMejorEvaluacion(evaluaciones);
+
+        let asignacionFinal = [...asignacionBase];
+        let costoFinal = costoBase;
+        let aplicado = false;
+
+        if(mejor.delta < 0){
+
+            asignacionFinal = [...mejor.asignacion];
+            costoFinal = mejor.costo;
+            aplicado = true;
+
+        }
+
+        return {
+            evaluaciones: evaluaciones,
+            asignacionFinal: asignacionFinal,
+            costoFinal: costoFinal,
+            aplicado: aplicado,
+            mejor: mejor,
+            rondas: 1
+        };
+
+    }
+
+
+    /* ===== BÚSQUEDA LOCAL: REPITE HASTA NO MEJORAR ===== */
+
+    function aplicarBusquedaLocal(asignacionBase){
+
+        let asignacionActual = [...asignacionBase];
+        let costoActual = calcularCosto(asignacionActual);
+
+        let todasEvaluaciones = [];
+        let aplicado = false;
+        let rondas = 0;
+        let seguir = true;
+        let mejorGlobal = null;
+
+        while(seguir === true){
+
+            rondas = rondas + 1;
+
+            let evaluaciones = evaluarIntercambios(asignacionActual, costoActual);
+            let mejor = elegirMejorEvaluacion(evaluaciones);
+
+            for(let i = 0; i < evaluaciones.length; i++){
+                evaluaciones[i].ronda = rondas;
+                todasEvaluaciones.push(evaluaciones[i]);
+            }
+
+            if(mejorGlobal === null || mejor.delta < mejorGlobal.delta){
+                mejorGlobal = mejor;
+            }
+
+            if(mejor.delta < 0){
+
+                asignacionActual = [...mejor.asignacion];
+                costoActual = mejor.costo;
+                aplicado = true;
+
+            }
+            else{
+
+                seguir = false;
+
+            }
+
+        }
+
+        return {
+            evaluaciones: todasEvaluaciones,
+            asignacionFinal: asignacionActual,
+            costoFinal: costoActual,
+            aplicado: aplicado,
+            mejor: mejorGlobal,
+            rondas: rondas
+        };
+
+    }
+
+
+    let resultadoMejora;
+
+    if(mejoraOriginal === "swap"){
+        resultadoMejora = aplicarSwap(asignacionInicial);
+    }
+    else{
+        resultadoMejora = aplicarBusquedaLocal(asignacionInicial);
+    }
+
+    let evaluaciones = resultadoMejora.evaluaciones;
+    let asignacionFinal = resultadoMejora.asignacionFinal;
+    let costoFinal = resultadoMejora.costoFinal;
+    let mejor = resultadoMejora.mejor;
+
+    let porcentajeMejora = 0;
+
+    if(costoInicial > 0){
+
+        porcentajeMejora =
+            ((costoInicial - costoFinal) / costoInicial) * 100;
+
+    }
+
+
+    /* ===== MOSTRAR EVALUACIONES ===== */
+
+    let evaluacionesHTML = "";
+
+    for(let e = 0; e < evaluaciones.length; e++){
+
+        let item = evaluaciones[e];
+
+        let claseDelta = "deltaNeutral";
+        let textoDelta = "No cambia";
+
+        if(item.delta < 0){
+            claseDelta = "deltaGood";
+            textoDelta = "Mejora";
+        }
+        else if(item.delta > 0){
+            claseDelta = "deltaBad";
+            textoDelta = "No mejora";
+        }
+
+        let etiquetaRonda = "";
+
+        if(mejoraOriginal !== "swap"){
+            etiquetaRonda =
+                '<span class="roundBadge">Ronda ' + item.ronda + '</span>';
+        }
+
+        evaluacionesHTML =
+            evaluacionesHTML +
+            '<div class="swapEvaluationCard">' +
+
+                '<div class="swapHeader">' +
+                    '<div>' +
+                        etiquetaRonda +
+                        '<span>Intercambio</span>' +
+                        '<h4>' +
+                            nombreMaquina(item.maquinaI) +
+                            '(' + nombreUbicacion(item.ubicacionI) + ')' +
+                            ' ↔ ' +
+                            nombreMaquina(item.maquinaJ) +
+                            '(' + nombreUbicacion(item.ubicacionJ) + ')' +
+                        '</h4>' +
+                    '</div>' +
+
+                    '<div class="deltaBadge ' + claseDelta + '">' +
+                        '<span>' + textoDelta + '</span>' +
+                        '<strong>ΔC = ' + item.delta + '</strong>' +
+                    '</div>' +
+                '</div>' +
+
+                '<div class="swapSubBlock">' +
+                    '<h5>Nueva asignación</h5>' +
+                    '<p>' + asignacionTextoPlano(item.asignacion) + '</p>' +
+                    asignacionVisual(item.asignacion) +
+                '</div>' +
+
+                '<div class="swapSubBlock">' +
+                    '<h5>Costo del intercambio</h5>' +
+
+                    '<div class="incrementalTableWrapper">' +
+                        '<table class="incrementalTable compactCostTable">' +
+                            '<thead>' +
+                                '<tr>' +
+                                    '<th>Par</th>' +
+                                    '<th>Fórmula</th>' +
+                                    '<th>Desarrollo</th>' +
+                                '</tr>' +
+                            '</thead>' +
+                            '<tbody>' +
+                                item.detalle.filas +
+                            '</tbody>' +
+                        '</table>' +
+                    '</div>' +
+
+                    '<div class="swapTotalLine">' +
+                        '<span>Total = ' + item.detalle.productos.join(" + ") + '</span>' +
+                        '<strong>' + item.costo + '</strong>' +
+                    '</div>' +
+                '</div>' +
+
+            '</div>';
+
+    }
+
+    document.getElementById("evaluacionesSwapVisual").innerHTML =
+        evaluacionesHTML;
+
+
+    /* ===== CRITERIO DE PARADA ===== */
+
+    let criterioHTML = "";
+
+    if(resultadoMejora.aplicado === true){
+
+        criterioHTML =
+            '<div class="stopCriteriaBox criteriaImprove">' +
+                '<h4>Se encontró mejora</h4>' +
+                '<p>' +
+                    'El mejor intercambio fue <strong>' +
+                    nombreMaquina(mejor.maquinaI) +
+                    '(' + nombreUbicacion(mejor.ubicacionI) + ')' +
+                    ' ↔ ' +
+                    nombreMaquina(mejor.maquinaJ) +
+                    '(' + nombreUbicacion(mejor.ubicacionJ) + ')' +
+                    '</strong>, con ΔC = <strong>' +
+                    mejor.delta +
+                    '</strong>.' +
+                '</p>' +
+                '<p>' +
+                    'Por lo tanto, se actualiza la asignación y el costo baja de <strong>' +
+                    costoInicial +
+                    '</strong> a <strong>' +
+                    costoFinal +
+                    '</strong>.' +
+                '</p>' +
+            '</div>';
+
+    }
+    else{
+
+        criterioHTML =
+            '<div class="stopCriteriaBox criteriaStop">' +
+                '<h4>Criterio de parada</h4>' +
+                '<p>' +
+                    'Todos los costos diferenciales cumplen <strong>ΔC ≥ 0</strong>. ' +
+                    'Esto significa que ningún intercambio reduce el costo total.' +
+                '</p>' +
+                '<p>' +
+                    'Por lo tanto, se alcanza un <strong>óptimo local</strong> con costo total: <strong>' +
+                    costoFinal +
+                    '</strong>.' +
+                '</p>' +
+            '</div>';
+
+    }
+
+    document.getElementById("criterioParadaVisual").innerHTML =
+        criterioHTML;
+
+
+    /* ===== ASIGNACIÓN FINAL ===== */
+
+    document.getElementById("asignacionFinalVisual").innerHTML =
+        '<div class="finalAssignmentBox">' +
+            '<div>' +
+                '<span>Asignación final</span>' +
+                '<h4>' + asignacionTextoPlano(asignacionFinal) + '</h4>' +
+                asignacionVisual(asignacionFinal) +
+            '</div>' +
+            '<div class="finalCostMini">' +
+                '<span>Costo final</span>' +
+                '<strong>' + costoFinal + '</strong>' +
+            '</div>' +
+        '</div>';
+
+
+    /* ===== TARJETAS RESUMEN ===== */
+
+    let finTiempo = performance.now();
+
+    let tiempoTotal =
+        (finTiempo - inicioTiempo) / 1000;
+
+    document.getElementById("cardCostoInicial").innerHTML =
+        costoInicial;
+
+    document.getElementById("cardCostoFinal").innerHTML =
+        costoFinal;
+
+    document.getElementById("cardMejora").innerHTML =
+        porcentajeMejora.toFixed(2) + "%";
+
+    document.getElementById("cardTiempo").innerHTML =
+        tiempoTotal.toFixed(4) + " s";
+
+
+    /* ===== GUARDAR ===== */
+
+    localStorage.setItem("asignacionFinal", JSON.stringify(asignacionFinal));
+    localStorage.setItem("costoFinal", costoFinal);
+    localStorage.setItem("porcentajeMejora", porcentajeMejora.toFixed(2));
+    localStorage.setItem("tiempoTotal", tiempoTotal.toFixed(4));
+
+}
+
+
+function exportarReporte(){
+
+    window.print();
+
+}
+
+</script>
+
+{% endblock %}

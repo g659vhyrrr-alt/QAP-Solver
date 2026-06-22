@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+
+{% block title %}QAP Solver{% endblock %}
+
+{% block content %}
+
+<div class="appShell">
+
+    <aside class="sidebar">
+
+        <div class="sidebarBrand">
+
+            <img src="{{ url_for('static', filename='img/logo-icon.png') }}" alt="Logo QAP Solver">
+
+            <div>
+                <h2>QAP Solver</h2>
+                <p>Facility Layout Optimization</p>
+            </div>
+
+        </div>
+
+        <nav class="sidebarMenu">
+
+            <a href="/" class="sidebarItem active">
+                <i class="bi bi-house"></i>
+                <span>Inicio</span>
+            </a>
+
+            <a href="#" class="sidebarItem">
+                <i class="bi bi-folder"></i>
+                <span>Proyecto</span>
+            </a>
+
+            <a href="#" class="sidebarItem">
+                <i class="bi bi-table"></i>
+                <span>Datos</span>
+            </a>
+
+            <a href="#" class="sidebarItem">
+                <i class="bi bi-cpu"></i>
+                <span>Algoritmos</span>
+            </a>
+
+            <a href="#" class="sidebarItem">
+                <i class="bi bi-play"></i>
+                <span>Ejecutar</span>
+            </a>
+
+            <a href="#" class="sidebarItem">
+                <i class="bi bi-bar-chart"></i>
+                <span>Resultados</span>
+            </a>
+
+            <a href="#" class="sidebarItem">
+                <i class="bi bi-file-earmark-text"></i>
+                <span>Reporte</span>
+            </a>
+
+            <a href="#" class="sidebarItem">
+                <i class="bi bi-info-circle"></i>
+                <span>Acerca de</span>
+            </a>
+
+        </nav>
+
+        <div class="sidebarBottom">
+
+            <button class="themeBox" id="themeToggle" type="button">
+                <i class="bi bi-sun"></i>
+                <span></span>
+                <i class="bi bi-moon"></i>
+            </button>
+
+            <p>v1.0.0</p>
+
+        </div>
+
+    </aside>
+
+    <main class="dashboardMain">
+
+        <div class="versionBadge">
+            <i class="bi bi-info-circle"></i>
+            <span>Versión 1.0.0</span>
+        </div>
+
+        <section class="dashboardHero">
+
+    <div class="logoWrapper">
+
+        <img src="{{ url_for('static', filename='img/logo.png') }}"
+             alt="Logo QAP Solver"
+             class="dashboardLogo logoClaro">
+
+        <img src="{{ url_for('static', filename='img/logo-icon.png') }}"
+             alt="Logo QAP Solver"
+             class="dashboardLogo logoOscuro">
+
+    </div>
+
+    <h1>QAP Solver</h1>
+
+    <h2>Facility Layout Optimization</h2>
+
+    <div class="heroLine">
+        <span></span>
+    </div>
+
+    <p>
+        Herramienta para la optimización de distribuciones de instalaciones
+        mediante heurísticos de construcción y mejora.
+    </p>
+
+</section>
+
+        <section class="dashboardActions">
+
+            <a href="/heuristicos" class="dashboardActionCard">
+                <div class="actionIcon iconBlue">
+                    <i class="bi bi-file-earmark-plus"></i>
+                </div>
+                <h3>Nueva instancia</h3>
+                <p>Crea un nuevo proyecto desde cero.</p>
+                <span class="arrowIcon"><i class="bi bi-arrow-right"></i></span>
+            </a>
+
+            <a href="/cargar" class="dashboardActionCard">
+                <div class="actionIcon iconGreen">
+                    <i class="bi bi-upload"></i>
+                </div>
+                <h3>Cargar archivo</h3>
+                <p>Importa matrices desde un archivo Excel o CSV.</p>
+                <span class="arrowIcon"><i class="bi bi-arrow-right"></i></span>
+            </a>
+
+            <a href="/ejemplo" class="dashboardActionCard">
+                <div class="actionIcon iconPurple">
+                    <i class="bi bi-folder2-open"></i>
+                </div>
+                <h3>Abrir ejemplo</h3>
+                <p>Explora un caso de prueba ya preparado.</p>
+                <span class="arrowIcon"><i class="bi bi-arrow-right"></i></span>
+            </a>
+
+        </section>
+
+        <footer class="dashboardFooter">
+
+            <div>
+                <i class="bi bi-shield-check"></i>
+                <span>Universidad La Salle Pachuca</span>
+                <span class="footerSeparator"></span>
+                <span>Ingeniería de Planta</span>
+            </div>
+
+            <div>
+                <i class="bi bi-calendar3"></i>
+                <span>2026</span>
+                <span class="footerSeparator"></span>
+                <i class="bi bi-person"></i>
+                <span>Invitado</span>
+            </div>
+
+        </footer>
+
+    </main>
+
+</div>
+
+{% endblock %}

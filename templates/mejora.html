@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block title %}Mejora | QAP Solver{% endblock %}
+
+{% block content %}
+
+<nav class="topbar">
+
+    <div class="topbarMarca">
+        <img src="{{ url_for('static', filename='img/logo-icon.png') }}" alt="Logo" class="topbarLogo">
+
+        <div>
+            <h1>QAP Solver</h1>
+            <p>Facility Layout Optimization</p>
+        </div>
+    </div>
+
+    <a href="/" class="btnVolver">
+        <i class="bi bi-house"></i>
+        Inicio
+    </a>
+
+</nav>
+
+<main class="pageMain">
+
+    <section class="pageHeader">
+
+        <span class="etiqueta">Fase 2</span>
+
+        <h2>Seleccionar método de mejora</h2>
+
+        <p>
+            Después de generar la solución inicial, selecciona el método que intentará reducir el costo total.
+        </p>
+
+    </section>
+
+    <section class="heuristicosGrid">
+
+        <label class="dashboard-card opcionHeuristica seleccionada">
+            <input type="radio" name="mejora" value="swap" checked>
+
+            <div>
+                <h4>Intercambio por pares (Swap)</h4>
+                <p>Evalúa intercambios entre dos instalaciones para buscar una solución de menor costo.</p>
+            </div>
+        </label>
+
+        <label class="dashboard-card opcionHeuristica">
+            <input type="radio" name="mejora" value="busqueda_local">
+
+            <div>
+                <h4>Búsqueda local</h4>
+                <p>Explora soluciones vecinas y conserva aquellas que mejoran el costo de la solución inicial.</p>
+            </div>
+        </label>
+
+    </section>
+
+    <div class="accionesInferiores">
+
+        <a href="/solucion-inicial" class="btnSecundario">
+            Volver
+        </a>
+
+        <button class="btn btn-primary-custom" onclick="continuarResultados()">
+    Generar resultados finales
+    <i class="bi bi-arrow-right"></i>
+</button>
+
+    </div>
+
+</main>
+
+{% endblock %}
