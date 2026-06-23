@@ -30,10 +30,7 @@
 
         <h2>Resumen de optimización</h2>
 
-        <p>
-            Aquí se muestra la mejora local mediante intercambio por pares, evaluando los costos
-            de cada posible intercambio desde la asignación inicial.
-        </p>
+        <p id="descripcionResultados"></p>
 
     </section>
 
@@ -100,35 +97,23 @@
 
     <section class="dashboard-card mt-4">
 
-        <h3>2. Método de mejora local</h3>
+    <h3 id="tituloMetodoMejora">2. Método de mejora</h3>
 
-        <div class="classNoteBox">
+    <div id="descripcionMetodoMejora" class="classNoteBox"></div>
 
-            <p>
-                Se prueban todos los intercambios posibles entre pares de máquinas. Para cada intercambio,
-                se genera una nueva asignación, se calcula su costo total y se compara contra el costo actual.
-            </p>
-
-            <p>
-                Si <strong>ΔC &lt; 0</strong>, el intercambio mejora la solución. Si <strong>ΔC ≥ 0</strong>,
-                el intercambio no reduce el costo.
-            </p>
-
-        </div>
+</section>
 
     </section>
 
     <section class="dashboard-card mt-4">
 
-        <h3>3. Evaluación de intercambios</h3>
+    <h3 id="tituloEvaluacionMejora">3. Evaluación del método</h3>
 
-        <p class="text-muted-custom">
-            Cada tarjeta muestra el intercambio probado, la nueva asignación, el costo calculado y la diferencia de costo.
-        </p>
+    <p id="descripcionEvaluacionMejora" class="text-muted-custom"></p>
 
-        <div id="evaluacionesSwapVisual" class="swapEvaluationGrid"></div>
+    <div id="evaluacionesSwapVisual" class="swapEvaluationGrid"></div>
 
-    </section>
+</section>
 
     <section class="dashboard-card mt-4">
 
@@ -143,6 +128,8 @@
         <h3>5. Asignación final</h3>
 
         <div id="asignacionFinalVisual"></div>
+
+        <div id="costoFinalDestacadoVisual" class="mt-4"></div>
 
         <div class="accionesInferiores">
 
@@ -180,6 +167,9 @@ let nombres = [
 
 let construccionTexto = "";
 let mejoraTexto = "";
+let descripcionMejora = "";
+let notaMejoraPrincipal = "";
+let notaMejoraCriterio = "";
 
 if(construccionOriginal === "mayores_flujos"){
     construccionTexto = "Asignación basada en mayores flujos";
@@ -203,6 +193,78 @@ document.getElementById("resMejora").innerHTML =
 
 document.getElementById("resTamano").innerHTML =
     tam + " × " + tam;
+
+/* ===== TEXTOS DINÁMICOS SEGÚN MÉTODO DE MEJORA ===== */
+
+if(mejoraOriginal === "swap"){
+
+    document.getElementById("descripcionResultados").innerHTML =
+        "Aquí se muestra el método de intercambio por pares (Swap), evaluando todos los cambios posibles entre dos máquinas desde la asignación inicial para encontrar si existe una reducción en el costo total.";
+
+    document.getElementById("tituloMetodoMejora").innerHTML =
+        "2. Método de mejora: Intercambio por pares (Swap)";
+
+    document.getElementById("descripcionMetodoMejora").innerHTML =
+        '<p>' +
+            'El método Swap parte de la asignación inicial obtenida en la fase de construcción. ' +
+            'Después genera todos los pares posibles de máquinas y prueba intercambiar sus ubicaciones.' +
+        '</p>' +
+
+        '<p>' +
+            'Para cada intercambio se calcula una nueva asignación temporal, se obtiene su costo total y se compara contra el costo actual mediante la diferencia <strong>ΔC = costo nuevo - costo actual</strong>.' +
+        '</p>' +
+
+        '<p>' +
+            'Si <strong>ΔC &lt; 0</strong>, el intercambio reduce el costo y se considera una mejora. ' +
+            'Si <strong>ΔC ≥ 0</strong>, el intercambio no mejora la solución.' +
+        '</p>' +
+
+        '<p>' +
+            'En este reporte se muestra la evaluación de los intercambios por pares y se selecciona el mejor movimiento encontrado para obtener una mejor solución.' +
+        '</p>';
+
+    document.getElementById("tituloEvaluacionMejora").innerHTML =
+        "3. Evaluación de intercambios por pares";
+
+    document.getElementById("descripcionEvaluacionMejora").innerHTML =
+        "Cada tarjeta muestra el par intercambiado, la nueva asignación generada, el costo calculado y el valor de ΔC para decidir si el movimiento mejora o no.";
+
+}
+else{
+
+    document.getElementById("descripcionResultados").innerHTML =
+        "Aquí se muestra el método de búsqueda local, partiendo de una solución inicial y explorando soluciones vecinas mediante intercambios por pares hasta que ya no sea posible reducir el costo total.";
+
+    document.getElementById("tituloMetodoMejora").innerHTML =
+        "2. Método de mejora: Búsqueda local";
+
+    document.getElementById("descripcionMetodoMejora").innerHTML =
+        '<p>' +
+            'La búsqueda local también utiliza intercambios por pares como movimiento base, pero no se queda únicamente con una evaluación inicial. ' +
+            'Este método analiza el vecindario de la solución actual y busca una asignación con menor costo.' +
+        '</p>' +
+
+        '<p>' +
+            'Primero se parte de la asignación inicial. Luego se prueban todos los intercambios posibles entre pares de máquinas. ' +
+            'Si alguno reduce el costo, se acepta el mejor intercambio y la nueva asignación pasa a ser la solución actual.' +
+        '</p>' +
+
+        '<p>' +
+            'Después, el proceso se repite nuevamente desde esa nueva solución. Por eso, a diferencia del Swap simple, la búsqueda local puede trabajar por varias rondas o iteraciones.' +
+        '</p>' +
+
+        '<p>' +
+            'El método se detiene cuando todos los intercambios posibles cumplen <strong>ΔC ≥ 0</strong>. ' +
+            'Eso significa que ya no se encontró una solución vecina con menor costo y se alcanza un <strong>óptimo local</strong>.' +
+        '</p>';
+
+    document.getElementById("tituloEvaluacionMejora").innerHTML =
+        "3. Iteraciones de búsqueda local";
+
+    document.getElementById("descripcionEvaluacionMejora").innerHTML =
+        "Cada tarjeta muestra los intercambios evaluados dentro de la búsqueda local. Si se encuentra una mejora, la solución se actualiza y se repite el proceso hasta cumplir el criterio de parada.";
+
+}
 
 
 /* ===== FUNCIONES DE FORMATO ===== */
@@ -282,42 +344,6 @@ function asignacionVisual(asignacion){
 }
 
 
-/* ===== COSTO COMO EN CLASE: PARES UNA SOLA VEZ ===== */
-
-function calcularCosto(asignacion){
-
-    let maquinaPorUbicacion = [];
-
-    for(let ubicacion = 0; ubicacion < asignacion.length; ubicacion++){
-
-        maquinaPorUbicacion.push(asignacion.indexOf(ubicacion));
-
-    }
-
-    let total = 0;
-
-    for(let u1 = 0; u1 < maquinaPorUbicacion.length; u1++){
-
-        for(let u2 = u1 + 1; u2 < maquinaPorUbicacion.length; u2++){
-
-            let m1 = maquinaPorUbicacion[u1];
-            let m2 = maquinaPorUbicacion[u2];
-
-            total =
-                total +
-                flujo[m1][m2] *
-                distancia[u1][u2];
-
-        }
-
-    }
-
-    return total;
-
-}
-
-
-
 /* ===== DETALLE DEL COSTO COMO EN CLASE ===== */
 
 function generarDetalleCosto(asignacion){
@@ -379,7 +405,111 @@ function generarDetalleCosto(asignacion){
 }
 
 
+/* ===== DATOS DESDE FLASK ===== */
+
+function normalizarEvaluacionSwap(item){
+
+    let asignacion = item.asignacion;
+
+    return {
+        ronda: item.ronda,
+        maquinaI: item.maquina_i,
+        maquinaJ: item.maquina_j,
+        ubicacionI: item.ubicacion_i,
+        ubicacionJ: item.ubicacion_j,
+        asignacion: asignacion,
+        costo: item.costo,
+        delta: item.delta,
+        detalle: generarDetalleCosto(asignacion)
+    };
+
+}
+
+function normalizarResultadoMejora(datos){
+
+    let evaluaciones = [];
+
+    for(let i = 0; i < datos.evaluaciones.length; i++){
+        evaluaciones.push(normalizarEvaluacionSwap(datos.evaluaciones[i]));
+    }
+
+    let mejor = null;
+
+    if(datos.mejor !== null){
+        mejor = normalizarEvaluacionSwap(datos.mejor);
+    }
+
+    return {
+        evaluaciones: evaluaciones,
+        asignacionFinal: datos.asignacion_final,
+        costoInicial: datos.costo_inicial,
+        costoFinal: datos.costo_final,
+        porcentajeMejora: datos.porcentaje_mejora,
+        aplicado: datos.aplicado,
+        mejor: mejor,
+        rondas: datos.rondas
+    };
+
+}
+
+async function obtenerResultadoMejora(){
+
+    let respuesta = await fetch("/api/mejora", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            metodo: mejoraOriginal,
+            flujo: flujo,
+            distancia: distancia,
+            asignacion_inicial: asignacionInicial
+        })
+    });
+
+    let datos = await respuesta.json();
+
+    if(!respuesta.ok){
+        throw new Error(datos.error || "No se pudo ejecutar la mejora.");
+    }
+
+    return normalizarResultadoMejora(datos);
+
+}
+
+function mostrarErrorResultados(mensaje){
+
+    document.getElementById("evaluacionesSwapVisual").innerHTML =
+        '<div class="classNoteBox">' + mensaje + '</div>';
+
+    document.getElementById("criterioParadaVisual").innerHTML = "";
+    document.getElementById("asignacionFinalVisual").innerHTML = "";
+    document.getElementById("costoFinalDestacadoVisual").innerHTML =
+    '<div class="finalResultGrayBox">' +
+
+        '<div>' +
+            '<span>Resultado final del método de mejora</span>' +
+            '<h3>' + costoFinal + '</h3>' +
+            '<p>' +
+                'Costo inicial: <strong>' + costoInicial + '</strong> · ' +
+                'Costo final: <strong>' + costoFinal + '</strong> · ' +
+                'Mejora: <strong>' + porcentajeMejora.toFixed(2) + '%</strong>' +
+            '</p>' +
+        '</div>' +
+
+        '<div class="finalResultMethod">' +
+            '<span>Método aplicado</span>' +
+            '<strong>' + mejoraTexto + '</strong>' +
+        '</div>' +
+
+    '</div>';
+
+}
+
+
 /* ===== VALIDAR DATOS ===== */
+
+async function iniciarResultados(){
 
 if(asignacionInicial === null){
 
@@ -389,7 +519,17 @@ if(asignacionInicial === null){
 }
 else{
 
-    let costoInicial = calcularCosto(asignacionInicial);
+    let resultadoMejora;
+
+    try{
+        resultadoMejora = await obtenerResultadoMejora();
+    }
+    catch(error){
+        mostrarErrorResultados(error.message);
+        return;
+    }
+
+    let costoInicial = resultadoMejora.costoInicial;
 
     document.getElementById("asignacionInicialVisual").innerHTML =
         '<div class="finalAssignmentBox">' +
@@ -405,175 +545,12 @@ else{
         '</div>';
 
 
-    /* ===== EVALUAR TODOS LOS INTERCAMBIOS ===== */
-
-    function evaluarIntercambios(asignacionBase, costoBase){
-
-        let evaluaciones = [];
-
-        for(let i = 0; i < asignacionBase.length; i++){
-
-            for(let j = i + 1; j < asignacionBase.length; j++){
-
-                let asignacionPrueba = [...asignacionBase];
-
-                let ubicacionI = asignacionPrueba[i];
-                let ubicacionJ = asignacionPrueba[j];
-
-                asignacionPrueba[i] = ubicacionJ;
-                asignacionPrueba[j] = ubicacionI;
-
-                let detalle = generarDetalleCosto(asignacionPrueba);
-                let costoPrueba = detalle.total;
-                let delta = costoPrueba - costoBase;
-
-                evaluaciones.push({
-                    maquinaI: i,
-                    maquinaJ: j,
-                    ubicacionI: ubicacionI,
-                    ubicacionJ: ubicacionJ,
-                    asignacion: asignacionPrueba,
-                    costo: costoPrueba,
-                    delta: delta,
-                    detalle: detalle
-                });
-
-            }
-
-        }
-
-        return evaluaciones;
-
-    }
-
-
-    function elegirMejorEvaluacion(evaluaciones){
-
-        let mejor = evaluaciones[0];
-
-        for(let i = 0; i < evaluaciones.length; i++){
-
-            if(evaluaciones[i].delta < mejor.delta){
-                mejor = evaluaciones[i];
-            }
-
-        }
-
-        return mejor;
-
-    }
-
-
-    /* ===== SWAP: BEST IMPROVEMENT DE UNA RONDA ===== */
-
-    function aplicarSwap(asignacionBase){
-
-        let costoBase = calcularCosto(asignacionBase);
-        let evaluaciones = evaluarIntercambios(asignacionBase, costoBase);
-        let mejor = elegirMejorEvaluacion(evaluaciones);
-
-        let asignacionFinal = [...asignacionBase];
-        let costoFinal = costoBase;
-        let aplicado = false;
-
-        if(mejor.delta < 0){
-
-            asignacionFinal = [...mejor.asignacion];
-            costoFinal = mejor.costo;
-            aplicado = true;
-
-        }
-
-        return {
-            evaluaciones: evaluaciones,
-            asignacionFinal: asignacionFinal,
-            costoFinal: costoFinal,
-            aplicado: aplicado,
-            mejor: mejor,
-            rondas: 1
-        };
-
-    }
-
-
-    /* ===== BÚSQUEDA LOCAL: REPITE HASTA NO MEJORAR ===== */
-
-    function aplicarBusquedaLocal(asignacionBase){
-
-        let asignacionActual = [...asignacionBase];
-        let costoActual = calcularCosto(asignacionActual);
-
-        let todasEvaluaciones = [];
-        let aplicado = false;
-        let rondas = 0;
-        let seguir = true;
-        let mejorGlobal = null;
-
-        while(seguir === true){
-
-            rondas = rondas + 1;
-
-            let evaluaciones = evaluarIntercambios(asignacionActual, costoActual);
-            let mejor = elegirMejorEvaluacion(evaluaciones);
-
-            for(let i = 0; i < evaluaciones.length; i++){
-                evaluaciones[i].ronda = rondas;
-                todasEvaluaciones.push(evaluaciones[i]);
-            }
-
-            if(mejorGlobal === null || mejor.delta < mejorGlobal.delta){
-                mejorGlobal = mejor;
-            }
-
-            if(mejor.delta < 0){
-
-                asignacionActual = [...mejor.asignacion];
-                costoActual = mejor.costo;
-                aplicado = true;
-
-            }
-            else{
-
-                seguir = false;
-
-            }
-
-        }
-
-        return {
-            evaluaciones: todasEvaluaciones,
-            asignacionFinal: asignacionActual,
-            costoFinal: costoActual,
-            aplicado: aplicado,
-            mejor: mejorGlobal,
-            rondas: rondas
-        };
-
-    }
-
-
-    let resultadoMejora;
-
-    if(mejoraOriginal === "swap"){
-        resultadoMejora = aplicarSwap(asignacionInicial);
-    }
-    else{
-        resultadoMejora = aplicarBusquedaLocal(asignacionInicial);
-    }
-
     let evaluaciones = resultadoMejora.evaluaciones;
     let asignacionFinal = resultadoMejora.asignacionFinal;
     let costoFinal = resultadoMejora.costoFinal;
     let mejor = resultadoMejora.mejor;
 
-    let porcentajeMejora = 0;
-
-    if(costoInicial > 0){
-
-        porcentajeMejora =
-            ((costoInicial - costoFinal) / costoInicial) * 100;
-
-    }
+    let porcentajeMejora = resultadoMejora.porcentajeMejora;
 
 
     /* ===== MOSTRAR EVALUACIONES ===== */
@@ -672,7 +649,7 @@ else{
 
         criterioHTML =
             '<div class="stopCriteriaBox criteriaImprove">' +
-                '<h4>Se encontró mejora</h4>' +
+                '<h4>Se encontr&oacute; mejora</h4>' +
                 '<p>' +
                     'El mejor intercambio fue <strong>' +
                     nombreMaquina(mejor.maquinaI) +
@@ -685,11 +662,14 @@ else{
                     '</strong>.' +
                 '</p>' +
                 '<p>' +
-                    'Por lo tanto, se actualiza la asignación y el costo baja de <strong>' +
+                    'Despu&eacute;s de repetir el proceso, la asignaci&oacute;n final baja el costo de <strong>' +
                     costoInicial +
                     '</strong> a <strong>' +
                     costoFinal +
                     '</strong>.' +
+                '</p>' +
+                '<p>' +
+                    'El algoritmo se detiene porque ya no existe un intercambio por pares con ΔC &lt; 0.' +
                 '</p>' +
             '</div>';
 
@@ -730,6 +710,25 @@ else{
                 '<strong>' + costoFinal + '</strong>' +
             '</div>' +
         '</div>';
+    document.getElementById("costoFinalDestacadoVisual").innerHTML =
+    '<div class="finalResultGrayBox">' +
+
+        '<div>' +
+            '<span>Resultado final del método de mejora</span>' +
+            '<h3>' + costoFinal + '</h3>' +
+            '<p>' +
+                'Costo inicial: <strong>' + costoInicial + '</strong> · ' +
+                'Costo final: <strong>' + costoFinal + '</strong> · ' +
+                'Mejora: <strong>' + porcentajeMejora.toFixed(2) + '%</strong>' +
+            '</p>' +
+        '</div>' +
+
+        '<div class="finalResultMethod">' +
+            '<span>Método aplicado</span>' +
+            '<strong>' + mejoraTexto + '</strong>' +
+        '</div>' +
+
+    '</div>';
 
 
     /* ===== TARJETAS RESUMEN ===== */
@@ -760,6 +759,10 @@ else{
     localStorage.setItem("tiempoTotal", tiempoTotal.toFixed(4));
 
 }
+
+}
+
+iniciarResultados();
 
 
 function exportarReporte(){

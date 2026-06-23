@@ -7,18 +7,16 @@
 <nav class="topbar">
 
     <div class="topbarMarca">
-
         <img src="{{ url_for('static', filename='img/logo-icon.png') }}" alt="Logo" class="topbarLogo">
 
         <div>
             <h1>QAP Solver</h1>
             <p>Facility Layout Optimization</p>
         </div>
-
     </div>
 
     <a href="/" class="btnVolver">
-        <i class="bi bi-arrow-left"></i>
+        <i class="bi bi-house"></i>
         Inicio
     </a>
 
@@ -30,22 +28,479 @@
 
         <span class="etiqueta">Caso de prueba</span>
 
-        <h2>Abrir ejemplo</h2>
+        <h2>Ejemplo precargado</h2>
 
-        <p>Esta sección cargará automáticamente una instancia de ejemplo del QAP.</p>
-
-    </section>
-
-    <section class="dashboard-card">
-
-        <h3>Próximamente</h3>
-
-        <p class="text-muted-custom">
-            Aquí pondremos un ejemplo listo para ejecutar.
+        <p>
+            Usa una matriz de ejemplo ya preparada o genera matrices aleatorias para probar
+            el funcionamiento del solucionador QAP.
         </p>
 
     </section>
 
+    <section class="dashboard-card mb-4">
+
+        <h3>Configuración del ejemplo</h3>
+
+        <p class="text-muted-custom">
+            Selecciona el método de construcción que quieres aplicar a las matrices cargadas.
+        </p>
+
+        <div class="exampleMethodGrid">
+
+            <label class="exampleMethodCard">
+                <input type="radio" name="construccion" value="mayores_flujos" checked>
+                <div>
+                    <i class="bi bi-diagram-3"></i>
+                    <h4>Mayores flujos</h4>
+                    <p>Selecciona primero la instalación con mayor flujo acumulado.</p>
+                </div>
+            </label>
+
+            <label class="exampleMethodCard">
+                <input type="radio" name="construccion" value="aleatorizada">
+                <div>
+                    <i class="bi bi-shuffle"></i>
+                    <h4>Construcción aleatorizada</h4>
+                    <p>Genera una asignación inicial aleatoria sin repetir ubicaciones.</p>
+                </div>
+            </label>
+
+        </div>
+
+        <div class="exampleControls">
+
+            <div class="exampleInputGroup">
+                <label for="tamEjemplo">Tamaño</label>
+                <input type="number" id="tamEjemplo" min="2" max="12" value="4">
+            </div>
+
+            <button class="btnSecundario" onclick="cargarEjemploProfesor()">
+                <i class="bi bi-journal-check"></i>
+                Cargar ejemplo del profesor
+            </button>
+
+            <button class="btnSecundario" onclick="rellenarAleatoriamente()">
+                <i class="bi bi-dice-5"></i>
+                Rellenar aleatoriamente
+            </button>
+
+            <button class="btnSecundario" onclick="limpiarMatrices()">
+                <i class="bi bi-eraser"></i>
+                Limpiar
+            </button>
+
+        </div>
+
+        <div id="estadoEjemplo" class="estadoBox estadoCorrecto mt-4">
+            <i class="bi bi-check-circle"></i>
+            Ejemplo del profesor cargado correctamente.
+        </div>
+
+    </section>
+
+    <section class="matrixLayout">
+
+        <div class="dashboard-card matrixCard">
+            <h3>Matriz de flujo W</h3>
+            <p class="text-muted-custom">
+                Representa los viajes o interacciones entre instalaciones.
+            </p>
+
+            <div id="tablaFlujoEjemplo"></div>
+        </div>
+
+        <div class="dashboard-card matrixCard">
+            <h3>Matriz de distancia D</h3>
+            <p class="text-muted-custom">
+                Representa las distancias entre ubicaciones.
+            </p>
+
+            <div id="tablaDistanciaEjemplo"></div>
+        </div>
+
+    </section>
+
+    <section class="dashboard-card mt-4">
+
+        <h3>Continuar con el ejemplo</h3>
+
+        <p class="text-muted-custom">
+            Al continuar, estas matrices se guardarán como si las hubieras capturado manualmente.
+            Después se abrirá la fase de solución inicial.
+        </p>
+
+        <div class="accionesInferiores">
+
+            <a href="/" class="btnSecundario">
+                Volver
+            </a>
+
+            <button class="btn btn-primary-custom" onclick="continuarConEjemplo()">
+                Resolver ejemplo
+                <i class="bi bi-arrow-right"></i>
+            </button>
+
+        </div>
+
+    </section>
+
 </main>
+
+<script>
+
+let matrizFlujoProfesor = [
+    [0, 2, 8, 3],
+    [2, 0, 4, 9],
+    [8, 4, 0, 5],
+    [3, 9, 5, 0]
+];
+
+let matrizDistanciaProfesor = [
+    [0, 8, 10, 2],
+    [8, 0, 4, 7],
+    [10, 4, 0, 9],
+    [2, 7, 9, 0]
+];
+
+let nombres = [
+    "A", "B", "C", "D", "E", "F",
+    "G", "H", "I", "J", "K", "L"
+];
+
+function nombreMaquina(i){
+
+    if(i < nombres.length){
+        return nombres[i];
+    }
+
+    return "M" + (i + 1);
+
+}
+
+function mostrarEstado(tipo, mensaje){
+
+    let estado = document.getElementById("estadoEjemplo");
+
+    if(tipo === "ok"){
+        estado.className = "estadoBox estadoCorrecto mt-4";
+        estado.innerHTML = '<i class="bi bi-check-circle"></i> ' + mensaje;
+    }
+
+    if(tipo === "error"){
+        estado.className = "estadoBox estadoError mt-4";
+        estado.innerHTML = '<i class="bi bi-x-circle"></i> ' + mensaje;
+    }
+
+    if(tipo === "advertencia"){
+        estado.className = "estadoBox estadoAdvertencia mt-4";
+        estado.innerHTML = '<i class="bi bi-exclamation-triangle"></i> ' + mensaje;
+    }
+
+}
+
+function crearTablaEditable(contenedor, matriz, tipo){
+
+    let caja = document.getElementById(contenedor);
+
+    let texto = "";
+
+    texto = texto + '<table class="matrix-table">';
+    texto = texto + '<thead>';
+    texto = texto + '<tr>';
+    texto = texto + '<th></th>';
+
+    for(let j = 0; j < matriz.length; j++){
+
+        if(tipo === "flujo"){
+            texto = texto + '<th>' + nombreMaquina(j) + '</th>';
+        }
+        else{
+            texto = texto + '<th>' + (j + 1) + '</th>';
+        }
+
+    }
+
+    texto = texto + '</tr>';
+    texto = texto + '</thead>';
+    texto = texto + '<tbody>';
+
+    for(let i = 0; i < matriz.length; i++){
+
+        texto = texto + '<tr>';
+
+        if(tipo === "flujo"){
+            texto = texto + '<th>' + nombreMaquina(i) + '</th>';
+        }
+        else{
+            texto = texto + '<th>' + (i + 1) + '</th>';
+        }
+
+        for(let j = 0; j < matriz.length; j++){
+
+            if(i === j){
+
+                texto =
+                    texto +
+                    '<td>' +
+                        '<input type="text" value="0" class="matrix-input matrix-diagonal" disabled>' +
+                    '</td>';
+
+            }
+            else{
+
+                texto =
+                    texto +
+                    '<td>' +
+                        '<input type="number" min="0" value="' + matriz[i][j] + '" class="matrix-input">' +
+                    '</td>';
+
+            }
+
+        }
+
+        texto = texto + '</tr>';
+
+    }
+
+    texto = texto + '</tbody>';
+    texto = texto + '</table>';
+
+    caja.innerHTML = texto;
+
+}
+
+function leerTabla(contenedor){
+
+    let matriz = [];
+    let filas = document.querySelectorAll("#" + contenedor + " tbody tr");
+
+    for(let i = 0; i < filas.length; i++){
+
+        let renglon = [];
+        let celdas = filas[i].querySelectorAll("input");
+
+        for(let j = 0; j < celdas.length; j++){
+
+            let valor = celdas[j].value.trim();
+
+            if(valor === "" || isNaN(valor) || Number(valor) < 0){
+                return null;
+            }
+
+            renglon.push(Number(valor));
+
+        }
+
+        matriz.push(renglon);
+
+    }
+
+    return matriz;
+
+}
+
+function cargarEjemploProfesor(){
+
+    document.getElementById("tamEjemplo").value = 4;
+
+    crearTablaEditable(
+        "tablaFlujoEjemplo",
+        matrizFlujoProfesor,
+        "flujo"
+    );
+
+    crearTablaEditable(
+        "tablaDistanciaEjemplo",
+        matrizDistanciaProfesor,
+        "distancia"
+    );
+
+    mostrarEstado(
+        "ok",
+        "Ejemplo del profesor cargado correctamente."
+    );
+
+}
+
+function generarMatrizAleatoria(tam){
+
+    let matriz = [];
+
+    for(let i = 0; i < tam; i++){
+
+        let renglon = [];
+
+        for(let j = 0; j < tam; j++){
+
+            if(i === j){
+                renglon.push(0);
+            }
+            else{
+                renglon.push(0);
+            }
+
+        }
+
+        matriz.push(renglon);
+
+    }
+
+    for(let i = 0; i < tam; i++){
+
+        for(let j = i + 1; j < tam; j++){
+
+            let valor = Math.floor(Math.random() * 10) + 1;
+
+            matriz[i][j] = valor;
+            matriz[j][i] = valor;
+
+        }
+
+    }
+
+    return matriz;
+
+}
+
+function rellenarAleatoriamente(){
+
+    let tam = parseInt(document.getElementById("tamEjemplo").value);
+
+    if(isNaN(tam) || tam < 2 || tam > 12){
+
+        mostrarEstado(
+            "error",
+            "El tamaño debe estar entre 2 y 12."
+        );
+
+        return;
+
+    }
+
+    let flujoAleatorio = generarMatrizAleatoria(tam);
+    let distanciaAleatoria = generarMatrizAleatoria(tam);
+
+    crearTablaEditable(
+        "tablaFlujoEjemplo",
+        flujoAleatorio,
+        "flujo"
+    );
+
+    crearTablaEditable(
+        "tablaDistanciaEjemplo",
+        distanciaAleatoria,
+        "distancia"
+    );
+
+    mostrarEstado(
+        "ok",
+        "Matrices aleatorias generadas correctamente."
+    );
+
+}
+
+function limpiarMatrices(){
+
+    let tam = parseInt(document.getElementById("tamEjemplo").value);
+
+    if(isNaN(tam) || tam < 2 || tam > 12){
+
+        mostrarEstado(
+            "error",
+            "El tamaño debe estar entre 2 y 12."
+        );
+
+        return;
+
+    }
+
+    let matrizVacia = [];
+
+    for(let i = 0; i < tam; i++){
+
+        let renglon = [];
+
+        for(let j = 0; j < tam; j++){
+            renglon.push(0);
+        }
+
+        matrizVacia.push(renglon);
+
+    }
+
+    crearTablaEditable(
+        "tablaFlujoEjemplo",
+        matrizVacia,
+        "flujo"
+    );
+
+    crearTablaEditable(
+        "tablaDistanciaEjemplo",
+        matrizVacia,
+        "distancia"
+    );
+
+    mostrarEstado(
+        "advertencia",
+        "Matrices limpiadas. Puedes capturar tus propios valores."
+    );
+
+}
+
+function limpiarResultadosAnteriores(){
+
+    localStorage.removeItem("asignacionInicial");
+    localStorage.removeItem("costoInicial");
+    localStorage.removeItem("asignacionFinal");
+    localStorage.removeItem("costoFinal");
+    localStorage.removeItem("porcentajeMejora");
+    localStorage.removeItem("tiempoTotal");
+
+}
+
+function continuarConEjemplo(){
+
+    let flujo = leerTabla("tablaFlujoEjemplo");
+    let distancia = leerTabla("tablaDistanciaEjemplo");
+
+    if(flujo === null || distancia === null){
+
+        mostrarEstado(
+            "error",
+            "Revisa las matrices. No deben existir celdas vacías ni valores negativos."
+        );
+
+        return;
+
+    }
+
+    if(flujo.length !== distancia.length){
+
+        mostrarEstado(
+            "error",
+            "Las matrices deben tener el mismo tamaño."
+        );
+
+        return;
+
+    }
+
+    let metodo =
+        document.querySelector('input[name="construccion"]:checked').value;
+
+    limpiarResultadosAnteriores();
+
+    localStorage.setItem("metodoConstruccion", metodo);
+    localStorage.setItem("tamMatriz", flujo.length);
+    localStorage.setItem("matrizFlujo", JSON.stringify(flujo));
+    localStorage.setItem("matrizDistancia", JSON.stringify(distancia));
+
+    window.location.href = "/solucion-inicial";
+
+}
+
+cargarEjemploProfesor();
+
+</script>
 
 {% endblock %}

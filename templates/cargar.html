@@ -7,18 +7,16 @@
 <nav class="topbar">
 
     <div class="topbarMarca">
-
         <img src="{{ url_for('static', filename='img/logo-icon.png') }}" alt="Logo" class="topbarLogo">
 
         <div>
             <h1>QAP Solver</h1>
             <p>Facility Layout Optimization</p>
         </div>
-
     </div>
 
     <a href="/" class="btnVolver">
-        <i class="bi bi-arrow-left"></i>
+        <i class="bi bi-house"></i>
         Inicio
     </a>
 
@@ -30,22 +28,912 @@
 
         <span class="etiqueta">Importar datos</span>
 
-        <h2>Cargar archivo</h2>
+        <h2>Conectar Excel o CSV</h2>
 
-        <p>Esta sección permitirá importar matrices desde Excel o CSV.</p>
-
-    </section>
-
-    <section class="dashboard-card">
-
-        <h3>Próximamente</h3>
-
-        <p class="text-muted-custom">
-            Aquí conectaremos la importación de archivos.
+        <p>
+            Importa un archivo con la matriz de flujo y la matriz de distancia.
+            El sistema reconocerá los datos y los cargará automáticamente para resolver el QAP.
         </p>
 
     </section>
 
+    <section class="dashboard-card mb-4">
+
+        <h3>Formato esperado</h3>
+
+        <p class="text-muted-custom">
+            Puedes cargar un archivo Excel o CSV. El archivo puede tener las dos matrices en una sola hoja
+            separadas por una fila vacía, o en dos hojas diferentes.
+        </p>
+
+        <div class="formatExampleGrid">
+
+            <div class="formatExampleBox">
+                <h4>Opción 1: Una hoja</h4>
+                <pre>Matriz de flujo W
+0 2 8 3
+2 0 4 9
+8 4 0 5
+3 9 5 0
+
+Matriz de distancia D
+0 8 10 2
+8 0 4 7
+10 4 0 9
+2 7 9 0</pre>
+            </div>
+
+            <div class="formatExampleBox">
+                <h4>Opción 2: Dos hojas</h4>
+                <p>
+                    Hoja 1: Matriz de flujo
+                    <br>
+                    Hoja 2: Matriz de distancia
+                </p>
+            </div>
+
+        </div>
+
+    </section>
+
+    <section class="dashboard-card mb-4">
+
+        <h3>Subir archivo</h3>
+
+        <p class="text-muted-custom">
+            Selecciona un archivo con extensión .xlsx, .xls o .csv.
+        </p>
+
+        <div class="uploadBox">
+
+            <input
+                type="file"
+                id="archivoMatrices"
+                accept=".xlsx,.xls,.csv"
+                onchange="procesarArchivo()"
+            >
+
+            <div class="uploadVisual">
+                <i class="bi bi-file-earmark-spreadsheet"></i>
+                <h4>Seleccionar archivo</h4>
+                <p>Excel o CSV con matrices de flujo y distancia</p>
+            </div>
+
+        </div>
+
+        <div id="estadoCarga" class="estadoBox estadoAdvertencia mt-4">
+            <i class="bi bi-exclamation-triangle"></i>
+            Aún no se ha cargado ningún archivo.
+        </div>
+
+    </section>
+
+    <section id="vistaPreviaArea" class="d-none">
+
+        <section class="dashboard-card mb-4">
+
+            <h3>Configuración para resolver</h3>
+
+            <p class="text-muted-custom">
+                Selecciona el método de construcción que se aplicará a las matrices importadas.
+            </p>
+
+            <div class="exampleMethodGrid">
+
+                <label class="exampleMethodCard">
+                    <input type="radio" name="construccion" value="mayores_flujos" checked>
+                    <div>
+                        <i class="bi bi-diagram-3"></i>
+                        <h4>Mayores flujos</h4>
+                        <p>Construye la solución inicial a partir de los flujos acumulados.</p>
+                    </div>
+                </label>
+
+                <label class="exampleMethodCard">
+                    <input type="radio" name="construccion" value="aleatorizada">
+                    <div>
+                        <i class="bi bi-shuffle"></i>
+                        <h4>Construcción aleatorizada</h4>
+                        <p>Genera una solución inicial aleatoria sin repetir ubicaciones.</p>
+                    </div>
+                </label>
+
+            </div>
+
+        </section>
+<section class="dashboard-card mb-4">
+
+    <h3>Revisión de matrices detectadas</h3>
+
+    <p class="text-muted-custom">
+        Las matrices se cargan bloqueadas para evitar cambios accidentales. Si el sistema reconoció mal algún dato,
+        puedes activar la edición y corregirlo manualmente.
+    </p>
+
+    <div class="accionesInferiores">
+
+        <button id="btnEditarMatrices" class="btnSecundario" onclick="activarEdicionMatrices()">
+            <i class="bi bi-pencil-square"></i>
+            Editar matrices
+        </button>
+
+        <button id="btnGuardarEdicion" class="btn btn-primary-custom d-none" onclick="guardarEdicionMatrices()">
+            Guardar cambios
+            <i class="bi bi-check-circle"></i>
+        </button>
+
+    </div>
+
+</section>
+        <section class="matrixLayout">
+
+            <div class="dashboard-card matrixCard">
+                <h3>Matriz de flujo W</h3>
+                <p class="text-muted-custom">
+                    Matriz detectada desde el archivo importado.
+                </p>
+
+                <div id="previewFlujo"></div>
+            </div>
+
+            <div class="dashboard-card matrixCard">
+                <h3>Matriz de distancia D</h3>
+                <p class="text-muted-custom">
+                    Matriz detectada desde el archivo importado.
+                </p>
+
+                <div id="previewDistancia"></div>
+            </div>
+
+        </section>
+
+        <section class="dashboard-card mt-4">
+
+            <h3>Continuar</h3>
+
+            <p class="text-muted-custom">
+                Al continuar, estas matrices se guardarán y se abrirá la fase de solución inicial.
+            </p>
+
+            <div class="accionesInferiores">
+
+                <a href="/" class="btnSecundario">
+                    Volver
+                </a>
+
+                <button class="btn btn-primary-custom" onclick="continuarConArchivo()">
+                    Resolver matrices importadas
+                    <i class="bi bi-arrow-right"></i>
+                </button>
+
+            </div>
+
+        </section>
+
+    </section>
+
 </main>
+
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+<script>
+
+let matrizFlujoImportada = null;
+let matrizDistanciaImportada = null;
+
+let nombres = [
+    "A", "B", "C", "D", "E", "F",
+    "G", "H", "I", "J", "K", "L"
+];
+
+function nombreMaquina(i){
+
+    if(i < nombres.length){
+        return nombres[i];
+    }
+
+    return "M" + (i + 1);
+
+}
+
+function mostrarEstado(tipo, mensaje){
+
+    let estado = document.getElementById("estadoCarga");
+
+    if(tipo === "ok"){
+        estado.className = "estadoBox estadoCorrecto mt-4";
+        estado.innerHTML = '<i class="bi bi-check-circle"></i> ' + mensaje;
+    }
+
+    if(tipo === "error"){
+        estado.className = "estadoBox estadoError mt-4";
+        estado.innerHTML = '<i class="bi bi-x-circle"></i> ' + mensaje;
+    }
+
+    if(tipo === "advertencia"){
+        estado.className = "estadoBox estadoAdvertencia mt-4";
+        estado.innerHTML = '<i class="bi bi-exclamation-triangle"></i> ' + mensaje;
+    }
+
+}
+
+function limpiarValor(valor){
+
+    if(valor === null || valor === undefined){
+        return "";
+    }
+
+    return String(valor).trim();
+
+}
+
+function esNumero(valor){
+
+    let texto = limpiarValor(valor);
+
+    if(texto === ""){
+        return false;
+    }
+
+    return !isNaN(texto);
+
+}
+
+function filaNumerica(fila){
+
+    let numeros = [];
+
+    for(let i = 0; i < fila.length; i++){
+
+        if(esNumero(fila[i])){
+            numeros.push(Number(fila[i]));
+        }
+
+    }
+
+    return numeros;
+
+}
+
+function limpiarFilas(datos){
+
+    let limpio = [];
+
+    for(let i = 0; i < datos.length; i++){
+
+        let fila = datos[i];
+
+        let filaLimpia = [];
+
+        for(let j = 0; j < fila.length; j++){
+            filaLimpia.push(limpiarValor(fila[j]));
+        }
+
+        let tieneAlgo = false;
+
+        for(let j = 0; j < filaLimpia.length; j++){
+
+            if(filaLimpia[j] !== ""){
+                tieneAlgo = true;
+            }
+
+        }
+
+        if(tieneAlgo){
+            limpio.push(filaLimpia);
+        }
+
+    }
+
+    return limpio;
+
+}
+
+function extraerBloquesNumericos(datos){
+
+    let bloques = [];
+    let bloqueActual = [];
+
+    for(let i = 0; i < datos.length; i++){
+
+        let fila = datos[i];
+        let numeros = filaNumerica(fila);
+
+        if(numeros.length > 0){
+            bloqueActual.push(numeros);
+        }
+        else{
+
+            if(bloqueActual.length > 0){
+                bloques.push(bloqueActual);
+                bloqueActual = [];
+            }
+
+        }
+
+    }
+
+    if(bloqueActual.length > 0){
+        bloques.push(bloqueActual);
+    }
+
+    return bloques;
+
+}
+
+function ajustarMatrizCuadrada(bloque){
+
+    let filas = [];
+
+    for(let i = 0; i < bloque.length; i++){
+
+        if(bloque[i].length > 0){
+            filas.push(bloque[i]);
+        }
+
+    }
+
+    let n = filas.length;
+
+    if(n === 0){
+        return null;
+    }
+
+    for(let i = 0; i < filas.length; i++){
+
+        if(filas[i].length > n){
+            filas[i] = filas[i].slice(filas[i].length - n);
+        }
+
+    }
+
+    for(let i = 0; i < filas.length; i++){
+
+        if(filas[i].length !== n){
+            return null;
+        }
+
+    }
+
+    return filas;
+
+}
+
+function validarMatriz(matriz){
+
+    if(matriz === null){
+        return false;
+    }
+
+    if(matriz.length < 2){
+        return false;
+    }
+
+    let n = matriz.length;
+
+    for(let i = 0; i < n; i++){
+
+        if(matriz[i].length !== n){
+            return false;
+        }
+
+        for(let j = 0; j < n; j++){
+
+            if(isNaN(matriz[i][j]) || matriz[i][j] < 0){
+                return false;
+            }
+
+        }
+
+    }
+
+    return true;
+
+}
+
+function buscarPorTitulos(datos){
+
+    let indiceFlujo = -1;
+    let indiceDistancia = -1;
+
+    for(let i = 0; i < datos.length; i++){
+
+        let textoFila = datos[i].join(" ").toLowerCase();
+
+        if(textoFila.includes("flujo") && indiceFlujo === -1){
+            indiceFlujo = i;
+        }
+
+        if(textoFila.includes("distancia") && indiceDistancia === -1){
+            indiceDistancia = i;
+        }
+
+    }
+
+    if(indiceFlujo === -1 || indiceDistancia === -1){
+        return null;
+    }
+
+    let datosFlujo = [];
+    let datosDistancia = [];
+
+    for(let i = indiceFlujo + 1; i < indiceDistancia; i++){
+        datosFlujo.push(datos[i]);
+    }
+
+    for(let i = indiceDistancia + 1; i < datos.length; i++){
+        datosDistancia.push(datos[i]);
+    }
+
+    let bloquesFlujo = extraerBloquesNumericos(datosFlujo);
+    let bloquesDistancia = extraerBloquesNumericos(datosDistancia);
+
+    if(bloquesFlujo.length === 0 || bloquesDistancia.length === 0){
+        return null;
+    }
+
+    let flujo = ajustarMatrizCuadrada(bloquesFlujo[0]);
+    let distancia = ajustarMatrizCuadrada(bloquesDistancia[0]);
+
+    if(validarMatriz(flujo) && validarMatriz(distancia) && flujo.length === distancia.length){
+
+        return {
+            flujo: flujo,
+            distancia: distancia
+        };
+
+    }
+
+    return null;
+
+}
+
+function detectarMatricesDesdeUnaHoja(datos){
+
+    datos = limpiarFilas(datos);
+
+    let porTitulos = buscarPorTitulos(datos);
+
+    if(porTitulos !== null){
+        return porTitulos;
+    }
+
+    let bloques = extraerBloquesNumericos(datos);
+
+    let matrices = [];
+
+    for(let i = 0; i < bloques.length; i++){
+
+        let matriz = ajustarMatrizCuadrada(bloques[i]);
+
+        if(validarMatriz(matriz)){
+            matrices.push(matriz);
+        }
+
+    }
+
+    if(matrices.length >= 2 && matrices[0].length === matrices[1].length){
+
+        return {
+            flujo: matrices[0],
+            distancia: matrices[1]
+        };
+
+    }
+
+    return null;
+
+}
+
+function hojaAMatriz(workbook, nombreHoja){
+
+    let hoja = workbook.Sheets[nombreHoja];
+
+    let datos = XLSX.utils.sheet_to_json(
+        hoja,
+        {
+            header: 1,
+            defval: ""
+        }
+    );
+
+    let bloques = extraerBloquesNumericos(limpiarFilas(datos));
+
+    if(bloques.length === 0){
+        return null;
+    }
+
+    return ajustarMatrizCuadrada(bloques[0]);
+
+}
+
+function detectarMatrices(workbook){
+
+    let hojas = workbook.SheetNames;
+
+    if(hojas.length >= 2){
+
+        let flujo = hojaAMatriz(workbook, hojas[0]);
+        let distancia = hojaAMatriz(workbook, hojas[1]);
+
+        if(validarMatriz(flujo) && validarMatriz(distancia) && flujo.length === distancia.length){
+
+            return {
+                flujo: flujo,
+                distancia: distancia
+            };
+
+        }
+
+    }
+
+    let primeraHoja = workbook.Sheets[hojas[0]];
+
+    let datos = XLSX.utils.sheet_to_json(
+        primeraHoja,
+        {
+            header: 1,
+            defval: ""
+        }
+    );
+
+    return detectarMatricesDesdeUnaHoja(datos);
+
+}
+
+function crearTablaPreview(contenedor, matriz, tipo, editable){
+
+    let caja = document.getElementById(contenedor);
+
+    let texto = "";
+
+    texto = texto + '<table class="matrix-table">';
+    texto = texto + '<thead>';
+    texto = texto + '<tr>';
+    texto = texto + '<th></th>';
+
+    for(let j = 0; j < matriz.length; j++){
+
+        if(tipo === "flujo"){
+            texto = texto + '<th>' + nombreMaquina(j) + '</th>';
+        }
+        else{
+            texto = texto + '<th>' + (j + 1) + '</th>';
+        }
+
+    }
+
+    texto = texto + '</tr>';
+    texto = texto + '</thead>';
+    texto = texto + '<tbody>';
+
+    for(let i = 0; i < matriz.length; i++){
+
+        texto = texto + '<tr>';
+
+        if(tipo === "flujo"){
+            texto = texto + '<th>' + nombreMaquina(i) + '</th>';
+        }
+        else{
+            texto = texto + '<th>' + (i + 1) + '</th>';
+        }
+
+        for(let j = 0; j < matriz.length; j++){
+
+            let clase = "matrix-input";
+            let bloqueado = "";
+
+            if(i === j){
+                clase = "matrix-input matrix-diagonal";
+                bloqueado = "disabled";
+            }
+            else if(editable === false){
+                bloqueado = "disabled";
+            }
+
+            texto =
+                texto +
+                '<td>' +
+                    '<input type="number" min="0" value="' + matriz[i][j] + '" class="' + clase + '" ' + bloqueado + '>' +
+                '</td>';
+
+        }
+
+        texto = texto + '</tr>';
+
+    }
+
+    texto = texto + '</tbody>';
+    texto = texto + '</table>';
+
+    caja.innerHTML = texto;
+
+}
+function leerMatrizPreview(contenedor){
+
+    let matriz = [];
+    let filas = document.querySelectorAll("#" + contenedor + " tbody tr");
+
+    for(let i = 0; i < filas.length; i++){
+
+        let renglon = [];
+        let celdas = filas[i].querySelectorAll("input");
+
+        for(let j = 0; j < celdas.length; j++){
+
+            let valor = celdas[j].value.trim();
+
+            if(valor === "" || isNaN(valor) || Number(valor) < 0){
+                return null;
+            }
+
+            renglon.push(Number(valor));
+
+        }
+
+        matriz.push(renglon);
+
+    }
+
+    return matriz;
+
+}
+
+function validarParejaMatrices(flujo, distancia){
+
+    if(flujo === null || distancia === null){
+        return "Las matrices no pueden tener celdas vacías, texto o valores negativos.";
+    }
+
+    if(flujo.length !== distancia.length){
+        return "La matriz de flujo y la matriz de distancia deben tener el mismo tamaño.";
+    }
+
+    let n = flujo.length;
+
+    for(let i = 0; i < n; i++){
+
+        if(flujo[i].length !== n || distancia[i].length !== n){
+            return "Ambas matrices deben ser cuadradas. Por ejemplo: 4 × 4 y 4 × 4.";
+        }
+
+    }
+
+    return "";
+
+}
+
+function activarEdicionMatrices(){
+
+    if(matrizFlujoImportada === null || matrizDistanciaImportada === null){
+
+        mostrarEstado(
+            "error",
+            "Primero debes importar un archivo válido."
+        );
+
+        return;
+
+    }
+
+    crearTablaPreview(
+        "previewFlujo",
+        matrizFlujoImportada,
+        "flujo",
+        true
+    );
+
+    crearTablaPreview(
+        "previewDistancia",
+        matrizDistanciaImportada,
+        "distancia",
+        true
+    );
+
+    document.getElementById("btnEditarMatrices").classList.add("d-none");
+    document.getElementById("btnGuardarEdicion").classList.remove("d-none");
+
+    mostrarEstado(
+        "advertencia",
+        "Modo edición activado. Corrige los valores necesarios y guarda los cambios."
+    );
+
+}
+
+function guardarEdicionMatrices(){
+
+    let flujo = leerMatrizPreview("previewFlujo");
+    let distancia = leerMatrizPreview("previewDistancia");
+
+    let error = validarParejaMatrices(flujo, distancia);
+
+    if(error !== ""){
+
+        mostrarEstado(
+            "error",
+            error
+        );
+
+        return;
+
+    }
+
+    matrizFlujoImportada = flujo;
+    matrizDistanciaImportada = distancia;
+
+    crearTablaPreview(
+        "previewFlujo",
+        matrizFlujoImportada,
+        "flujo",
+        false
+    );
+
+    crearTablaPreview(
+        "previewDistancia",
+        matrizDistanciaImportada,
+        "distancia",
+        false
+    );
+
+    document.getElementById("btnEditarMatrices").classList.remove("d-none");
+    document.getElementById("btnGuardarEdicion").classList.add("d-none");
+
+    mostrarEstado(
+        "ok",
+        "Cambios guardados correctamente. Las matrices vuelven a estar bloqueadas."
+    );
+
+}
+
+function procesarArchivo(){
+
+    let input = document.getElementById("archivoMatrices");
+    let archivo = input.files[0];
+
+    if(!archivo){
+
+        mostrarEstado(
+            "advertencia",
+            "Aún no se ha cargado ningún archivo."
+        );
+
+        return;
+
+    }
+
+    let lector = new FileReader();
+
+    lector.onload = function(evento){
+
+        try{
+
+            let datos = new Uint8Array(evento.target.result);
+
+            let workbook = XLSX.read(
+                datos,
+                {
+                    type: "array"
+                }
+            );
+
+            let resultado = detectarMatrices(workbook);
+
+            if(resultado === null){
+
+                mostrarEstado(
+                    "error",
+                    "No se pudieron detectar dos matrices cuadradas válidas en el archivo."
+                );
+
+                document.getElementById("vistaPreviaArea").classList.add("d-none");
+
+                return;
+
+            }
+
+            matrizFlujoImportada = resultado.flujo;
+            matrizDistanciaImportada = resultado.distancia;
+
+            crearTablaPreview(
+    "previewFlujo",
+    matrizFlujoImportada,
+    "flujo",
+    false
+);
+
+            crearTablaPreview(
+    "previewDistancia",
+    matrizDistanciaImportada,
+    "distancia",
+    false
+);
+
+            document.getElementById("vistaPreviaArea").classList.remove("d-none");
+
+            mostrarEstado(
+                "ok",
+                "Archivo importado correctamente. Se detectaron matrices de tamaño " +
+                matrizFlujoImportada.length +
+                " × " +
+                matrizFlujoImportada.length +
+                "."
+            );
+
+        }
+        catch(error){
+
+            mostrarEstado(
+                "error",
+                "Ocurrió un error al leer el archivo. Verifica que sea CSV o Excel válido."
+            );
+
+            document.getElementById("vistaPreviaArea").classList.add("d-none");
+
+        }
+
+    };
+
+    lector.readAsArrayBuffer(archivo);
+
+}
+
+function limpiarResultadosAnteriores(){
+
+    localStorage.removeItem("asignacionInicial");
+    localStorage.removeItem("costoInicial");
+    localStorage.removeItem("asignacionFinal");
+    localStorage.removeItem("costoFinal");
+    localStorage.removeItem("porcentajeMejora");
+    localStorage.removeItem("tiempoTotal");
+
+}
+
+function continuarConArchivo(){
+
+        let flujoActual = leerMatrizPreview("previewFlujo");
+    let distanciaActual = leerMatrizPreview("previewDistancia");
+
+    let error = validarParejaMatrices(flujoActual, distanciaActual);
+
+    if(error !== ""){
+
+        mostrarEstado(
+            "error",
+            error
+        );
+
+        return;
+
+    }
+
+    matrizFlujoImportada = flujoActual;
+    matrizDistanciaImportada = distanciaActual;
+
+    if(matrizFlujoImportada === null || matrizDistanciaImportada === null){
+
+        mostrarEstado(
+            "error",
+            "Primero debes importar un archivo válido."
+        );
+
+        return;
+
+    }
+
+    let metodo =
+        document.querySelector('input[name="construccion"]:checked').value;
+
+    limpiarResultadosAnteriores();
+
+    localStorage.setItem("metodoConstruccion", metodo);
+    localStorage.setItem("tamMatriz", matrizFlujoImportada.length);
+    localStorage.setItem("matrizFlujo", JSON.stringify(matrizFlujoImportada));
+    localStorage.setItem("matrizDistancia", JSON.stringify(matrizDistanciaImportada));
+
+    window.location.href = "/solucion-inicial";
+
+}
+
+</script>
 
 {% endblock %}
