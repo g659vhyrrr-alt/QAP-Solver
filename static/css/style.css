@@ -2518,3 +2518,419 @@ body.darkMode .finalResultMethod {
     }
 
 }
+/* ===== FÓRMULA FUNCIÓN OBJETIVO ===== */
+
+.formulaBox {
+    margin: 18px 0;
+    padding: 20px 24px;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    color: var(--primaryDark);
+    font-size: 22px;
+    font-weight: 900;
+    text-align: center;
+    line-height: 1.8;
+}
+
+.formulaBox sub {
+    font-size: 0.65em;
+    vertical-align: sub;
+}
+
+.formulaBox sup {
+    font-size: 0.65em;
+    vertical-align: super;
+}
+
+body.darkMode .formulaBox {
+    background: rgba(15, 23, 42, 0.95);
+    color: #bfdbfe;
+}
+/* ===== FUNCIÓN OBJETIVO QAP ===== */
+
+.funcionObjetivoCard {
+    overflow: hidden;
+}
+
+.objectiveInfoGrid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 22px;
+    margin-top: 24px;
+}
+
+.objectiveInfoBox {
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    padding: 26px;
+}
+
+.objectiveInfoBox h4 {
+    margin: 0 0 14px;
+    color: var(--text);
+    font-size: 20px;
+    font-weight: 900;
+}
+
+.objectiveInfoBox p {
+    color: var(--muted);
+    font-weight: 600;
+    line-height: 1.8;
+    margin-bottom: 16px;
+}
+
+.objectiveFormulaBox {
+    background: #ffffff;
+    border: 1px solid rgba(37, 99, 235, 0.22);
+    border-radius: 22px;
+    padding: 22px;
+    margin: 20px 0;
+    color: var(--primaryDark);
+    font-family: "Inter", system-ui, sans-serif;
+    font-size: 20px;
+    font-weight: 850;
+    line-height: 2;
+    text-align: center;
+    box-shadow: 0 14px 35px rgba(15, 23, 42, 0.05);
+}
+
+.compactFormulaBox {
+    font-size: 18px;
+}
+
+.formulaWord {
+    color: var(--muted);
+    font-size: 14px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-right: 8px;
+}
+
+.formulaZ {
+    font-size: 24px;
+    color: var(--primary);
+    font-weight: 950;
+    margin-right: 8px;
+}
+
+.sumSymbol {
+    display: inline-block;
+    position: relative;
+    margin: 0 5px;
+    font-size: 30px;
+    font-weight: 900;
+}
+
+.sumSymbol sub,
+.sumSymbol sup,
+.formulaTerm sub {
+    font-size: 0.55em;
+}
+
+.formulaTerm {
+    display: inline-block;
+    margin-left: 8px;
+    color: var(--text);
+    font-weight: 850;
+}
+
+.objectivePermutationBox,
+.objectiveResultBox {
+    background: #ffffff;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 20px;
+    margin-top: 16px;
+}
+
+.objectivePermutationBox span,
+.objectiveResultBox span {
+    display: block;
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 800;
+    margin-bottom: 8px;
+}
+
+.objectivePermutationBox strong,
+.objectiveResultBox strong {
+    display: block;
+    color: var(--primaryDark);
+    font-size: 22px;
+    font-weight: 950;
+}
+
+/* Modo oscuro */
+
+body.darkMode .objectiveInfoBox,
+body.darkMode .objectiveFormulaBox,
+body.darkMode .objectivePermutationBox,
+body.darkMode .objectiveResultBox {
+    background: rgba(15, 23, 42, 0.95);
+}
+
+body.darkMode .objectiveInfoBox h4,
+body.darkMode .formulaTerm {
+    color: #e5e7eb;
+}
+
+body.darkMode .objectiveFormulaBox,
+body.darkMode .objectivePermutationBox strong,
+body.darkMode .objectiveResultBox strong {
+    color: #bfdbfe;
+}
+
+/* Responsive */
+
+@media (max-width: 950px) {
+
+    .objectiveInfoGrid {
+        grid-template-columns: 1fr;
+    }
+
+    .objectiveFormulaBox {
+        font-size: 16px;
+        text-align: left;
+    }
+
+    .sumSymbol {
+        font-size: 24px;
+    }
+
+}
+/* ===== FUNCIÓN OBJETIVO QAP ===== */
+
+.funcionObjetivoCard {
+    overflow: hidden;
+}
+
+.objectiveStepGrid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px;
+    margin-top: 22px;
+}
+
+.objectiveStepBox {
+    background: #F8FAFC;
+    border: 1px solid #E5E7EB;
+    border-radius: 18px;
+    padding: 20px;
+    box-shadow: 0 10px 25px rgba(15, 23, 42, 0.04);
+}
+
+.objectiveFullBox {
+    grid-column: 1 / -1;
+}
+
+.objectiveStepBadge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #DBEAFE;
+    color: #2563EB;
+    font-size: 12px;
+    font-weight: 800;
+    border-radius: 999px;
+    padding: 6px 12px;
+    margin-bottom: 12px;
+}
+
+.objectiveStepBox h4 {
+    color: #1F2937;
+    font-size: 17px;
+    font-weight: 800;
+    margin-bottom: 10px;
+}
+
+.objectiveStepBox p {
+    color: #4B5563;
+    font-size: 14px;
+    line-height: 1.7;
+    margin-bottom: 10px;
+}
+
+.objectiveStepBox ul {
+    margin: 10px 0 0 18px;
+    padding: 0;
+}
+
+.objectiveStepBox li {
+    color: #4B5563;
+    font-size: 14px;
+    line-height: 1.7;
+    margin-bottom: 8px;
+}
+
+.objectiveMiniFormula {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    background: #FFFFFF;
+    border: 1px solid #E5E7EB;
+    border-radius: 14px;
+    padding: 12px 14px;
+    margin-top: 10px;
+    color: #1F2937;
+    font-weight: 800;
+}
+
+.objectiveMiniFormula span {
+    color: #6B7280;
+    font-weight: 600;
+}
+
+.objectiveFormulaBox {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    background: #FFFFFF;
+    border: 1px solid #E5E7EB;
+    border-radius: 16px;
+    padding: 16px;
+    margin: 14px 0;
+}
+
+.objectiveFormulaLarge {
+    padding: 20px;
+}
+
+.formulaWord {
+    color: #2563EB;
+    font-weight: 900;
+}
+
+.formulaZ {
+    color: #111827;
+    font-size: 22px;
+    font-weight: 900;
+}
+
+.sumSymbol {
+    color: #1F2937;
+    font-size: 21px;
+    font-weight: 900;
+}
+
+.formulaTerm {
+    color: #111827;
+    font-size: 18px;
+    font-weight: 800;
+}
+
+.compactFormulaBox .formulaTerm {
+    font-size: 16px;
+}
+
+.objectiveExampleBox {
+    background: #EFF6FF;
+    border: 1px solid #BFDBFE;
+    border-radius: 16px;
+    padding: 14px;
+    margin-top: 14px;
+}
+
+.objectiveExampleBox span {
+    display: block;
+    color: #2563EB;
+    font-size: 12px;
+    font-weight: 900;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+}
+
+.objectiveExampleBox p {
+    margin: 0;
+    color: #1F2937;
+    font-weight: 700;
+}
+
+.objectivePermutationBox {
+    background: #FFFFFF;
+    border: 1px solid #E5E7EB;
+    border-radius: 16px;
+    padding: 16px;
+    margin: 14px 0;
+}
+
+.objectivePermutationBox span {
+    display: block;
+    color: #6B7280;
+    font-size: 12px;
+    font-weight: 800;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+}
+
+.objectivePermutationBox strong {
+    color: #1F2937;
+    font-size: 16px;
+}
+
+.objectiveCodeLogic {
+    background: #111827;
+    color: #F9FAFB;
+    border-radius: 16px;
+    padding: 16px;
+    margin: 16px 0;
+}
+
+.objectiveCodeLogic span {
+    display: block;
+    color: #93C5FD;
+    font-size: 12px;
+    font-weight: 900;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+}
+
+.objectiveCodeLogic code {
+    color: #F9FAFB;
+    font-size: 14px;
+    white-space: normal;
+}
+
+.objectiveResultGrid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+    margin-top: 16px;
+}
+
+.objectiveResultBox {
+    background: #FFFFFF;
+    border: 1px solid #E5E7EB;
+    border-radius: 16px;
+    padding: 18px;
+}
+
+.objectiveResultBox span {
+    display: block;
+    color: #6B7280;
+    font-size: 12px;
+    font-weight: 800;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+}
+
+.objectiveResultBox strong {
+    color: #2563EB;
+    font-size: 24px;
+    font-weight: 900;
+}
+
+@media (max-width: 900px) {
+
+    .objectiveStepGrid {
+        grid-template-columns: 1fr;
+    }
+
+    .objectiveResultGrid {
+        grid-template-columns: 1fr;
+    }
+
+}
